@@ -1,0 +1,22 @@
+# Témoin rouge de `identifiants_non_persistes` : l'arbre est récupéré par une
+# action qui gardera l'en-tête d'authentification dans sa configuration locale.
+name: persiste
+on:
+  pull_request_target:
+jobs:
+  juger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Référence
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: base
+          persist-credentials: false
+
+      - name: Arbre
+        if: github.event.pull_request.draft != true
+        uses: actions/checkout@v4
+        with:
+          ref: refs/pull/1/head
+          path: arbre
