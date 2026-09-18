@@ -116,11 +116,20 @@ indications et non des barrières :
 Tout ce qui suit est un échafaudage provisoire : une implémentation parallèle qui dérivera si on
 l'oublie. Chacune doit devenir un besoin ouvert et être rendue à la garde quand elle existera.
 
-| Échafaudage | Ce que la garde devra reprendre |
-|---|---|
-| `empreinte.sh` | §4.4 donne l'empreinte de l'état validé à la garde. Le script est une préfiguration en shell. |
-| Format et verbe de validation | §4.4 : *la garde possède le format et le verbe*. Ici, c'est le workflow qui les tient. |
-| Déclaration remplie à la main | Le plancher se tire des chemins des entrées comparés à ce qui est modifié. Sans catalogues, il n'y a pas de chemins. |
-| Vérifications demandées à la main | La garde les demande à partir des engagements déclarés et de ceux qui les couvrent par renvoi. |
-| Aucun contrôle de conformité | §4.3 n'est pas joué : rien ne vérifie qu'une décision se conforme à son rang. |
-| Liste d'exclusions écrite | Elle appartiendra au schéma, avec un emplacement conventionnel et une déclaration pour les seuls écarts (§3). |
+| Échafaudage | Ce que la garde devra reprendre | Tranche |
+|---|---|---|
+| `empreinte.sh` | §4.4 donne l'empreinte de l'état validé à la garde. Le script est une préfiguration en shell. | A |
+| Déclaration remplie à la main | Le plancher se tire des chemins des entrées comparés à ce qui est modifié. Sans catalogues, il n'y a pas de chemins. | B |
+| Aucun contrôle d'intégrité | §4.1 n'est pas joué : rien ne vérifie l'unicité d'un identifiant, un renvoi mort, un invariant orphelin. | B |
+| Vérifications demandées à la main | La garde les demande à partir des engagements déclarés et de ceux qui les couvrent par renvoi. C'est le renvoi qu'un humain oublie. | C |
+| Format et verbe de validation | §4.4 : *la garde possède le format et le verbe*. Ici, c'est le workflow qui les tient. | C |
+| Catalogues maintenus à la main | Identifiants attribués, refus avec sa raison, rejeu d'une édition externe (§3). | D |
+| Aucune couverture | §4.2 n'est pas joué : rien ne vérifie qu'un invariant a son harnais, qu'il tourne, qu'il a ses témoins. | E |
+| Aucun contrôle de conformité | §4.3 n'est pas joué : rien ne vérifie qu'une décision se conforme à son rang, rien ne signale les promotions. | F |
+| Liste d'exclusions écrite | Elle appartiendra au schéma, avec un emplacement conventionnel et une déclaration pour les seuls écarts (§3). | D |
+
+Chaque échafaudage est une implémentation parallèle : elle dérivera si on l'oublie. L'ordre dans
+lequel ils tombent est celui de `docs/plan-de-construction.md`, et il est choisi par le soulagement
+qu'il apporte, non par la commodité du constructeur.
+
+**Ce tableau est la mesure du chantier.** Quand il est vide, la garde garde ce qu'elle promet.
