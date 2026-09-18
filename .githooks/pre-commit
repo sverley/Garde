@@ -24,8 +24,10 @@ bash .github/scripts/empreinte.sh . .garde/empreinte-exclusions > /dev/null
 if [ -f Cargo.toml ]; then
   echo "· forme"
   cargo fmt --all -- --check
-  echo "· cœur"
-  cargo test --lib --quiet
+  echo "· harnais"
+  # `--lib` ne jouerait rien : les harnais vivent dans `tests/`, hors de
+  # l'empreinte, pour que les corriger n'annule pas une validation (§4.4).
+  cargo test --quiet
 fi
 
 duree=$(( $(date +%s) - debut ))

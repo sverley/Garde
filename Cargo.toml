@@ -1,0 +1,16 @@
+# Amorce posée par l'audit : le strict minimum pour que le harnais tourne.
+# Ni `rust-version`, ni dépendance : `manifeste` et `dependances` sont rouges,
+# et c'est voulu. Le codage les rend verts.
+
+[package]
+name = "garde"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+name = "garde"
+path = "src/lib.rs"
+
+[[bin]]
+name = "garde"
+path = "src/main.rs"
