@@ -1,0 +1,69 @@
+name: construction
+
+# Le passage complet (§4.2), joué sur les trois cibles.
+#
+# Contrairement à `garde.yml`, celui-ci exécute bien le code de l'intégration.
+# C'est pourquoi il tourne sur `pull_request` avec un jeton en lecture seule, et
+# non sur `pull_request_target`. Les deux ne doivent jamais être confondus.
+#
+# GARDE_STRICT=1 : dans le passage complet, un outil manquant fait échouer au
+# lieu de sauter. Le harnais n'a rien à lire — le mode est un argument du
+# passage, et c'est la garde qui interprète le code réservé (§4.2).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: construction-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  amont:
+    name: Forme
+    runs-on: ubuntu-latest
+    outputs:
+      rust: ${{ steps.detecte.outputs.rust }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: detecte
+        run: |
+          if [ -f Cargo.toml ]; then echo "rust=oui" >> "$GITHUB_OUTPUT"
+          else echo "rust=non" >> "$GITHUB_OUTPUT"; fi
+      - name: Scripts
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          shellcheck .github/scripts/*.sh .githooks/pre-commit
+      - name: Empreinte déterministe
+        run: |
+          set -euo pipefail
+          a=$(bash .github/scripts/empreinte.sh . .garde/empreinte-exclusions)
+          b=$(bash .github/scripts/empreinte.sh . .garde/empreinte-exclusions)
+          [ "$a" = "$b" ] || { echo "Empreinte non déterministe : $a vs $b" >&2; exit 1; }
+          echo "Empreinte : $a"
+
+  produit:
+    name: Produit (${{ matrix.os }})
+    needs: amont
+    if: needs.amont.outputs.rust == 'oui'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    env:
+      GARDE_STRICT: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --all-targets --all-features -- -D warnings
+      - run: cargo test --all-features
+      - run: cargo build --release

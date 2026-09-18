@@ -1,0 +1,29 @@
+# Chemins exclus de l'empreinte de l'état validé (§4.4).
+#
+# L'empreinte porte sur l'arbre restreint à ce qui compte. Documentation simple,
+# harnais et analyse en sont exclus : les modifier n'annule pas une validation.
+# Les catalogues, eux, sont gardés et donc DANS l'empreinte — les exclure
+# reviendrait à pouvoir amender la description sans annuler la validation.
+#
+# Un motif est un glob à la manière de `case` : `*` ne franchit pas un `/`
+# sauf s'il est écrit explicitement. Une ligne vide ou commençant par # est ignorée.
+
+# --- Documentation simple ---
+docs/plan-de-construction.md
+docs/application.md
+README.md
+
+# --- Harnais ---
+tests/*
+*/tests/*
+*/*/tests/*
+
+# --- Analyse ---
+# L'analyse vit dans la description de l'intégration, jamais dans l'arbre.
+
+# NOTE : ne sont PAS exclus, et c'est voulu —
+#   docs/document-fondateur.md   la description : un catalogue
+#   docs/catalogues/*            les catalogues, quand ils existeront
+#   .garde/*                     ce fichier lui-même
+#   .github/workflows/*          l'application surveille ses propres chemins (annexe C)
+#   src/*, Cargo.toml, Cargo.lock  le produit

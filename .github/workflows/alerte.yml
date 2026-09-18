@@ -1,0 +1,74 @@
+name: alerte
+
+# Passer outre se voit (§4.4).
+#
+# Une écriture directe dans la référence, ou une fusion dont la tête n'était pas
+# verte, ouvre une issue étiquetée « alerte ». Seul un humain la ferme.
+#
+# Il ne distingue pas la main du porteur de celle d'un agent quand tous écrivent
+# avec le même compte — c'est une limite assumée, pas un défaut à corriger ici.
+
+on:
+  push:
+    branches: [main]
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  alerte:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Constater
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPOT: ${{ github.repository }}
+          EVENEMENT: ${{ github.event_name }}
+          COMMIT: ${{ github.sha }}
+          AUTEUR: ${{ github.actor }}
+          FUSIONNEE: ${{ github.event.pull_request.merged }}
+          NUMERO: ${{ github.event.pull_request.number }}
+          TETE: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          motif=""
+
+          if [ "$EVENEMENT" = "push" ]; then
+            # Une poussée sur la référence qui n'est pas la fusion d'une
+            # intégration est une écriture directe.
+            parents=$(gh api "repos/$DEPOT/commits/$COMMIT" --jq '.parents | length')
+            rattachee=$(gh api "repos/$DEPOT/commits/$COMMIT/pulls" \
+              -H "Accept: application/vnd.github.groot-preview+json" --jq 'length' || echo 0)
+            if [ "$rattachee" -eq 0 ] && [ "$parents" -lt 2 ]; then
+              motif="Écriture directe dans la référence par \`$AUTEUR\` (commit \`$COMMIT\`), sans intégration rattachée."
+            fi
+          fi
+
+          if [ "$EVENEMENT" = "pull_request_target" ] && [ "$FUSIONNEE" = "true" ]; then
+            verdict=$(gh api "repos/$DEPOT/commits/$TETE/check-runs" \
+              --jq '[ .check_runs[] | select(.name == "garde") | .conclusion ] | last // "absent"')
+            if [ "$verdict" != "success" ]; then
+              motif="Intégration #$NUMERO fusionnée alors que la garde était \`$verdict\` sur la tête \`$TETE\`."
+            fi
+          fi
+
+          if [ -z "$motif" ]; then
+            echo "Rien à signaler."
+            exit 0
+          fi
+
+          gh label create alerte --color B60205 \
+            --description "Passer outre constaté ; seul un humain ferme" 2>/dev/null || true
+          gh issue create --repo "$DEPOT" --label alerte \
+            --title "Alerte : passer outre" \
+            --body "$motif
+
+La garde signale, elle ne décide pas (§1). Cette issue reste ouverte jusqu'à ce qu'un humain
+constate ce qui s'est passé et le lève explicitement — soit parce que c'était légitime et
+pourquoi, soit en portant un besoin qui répare.
+
+<sub>Ouvert automatiquement. Ne pas fermer sans écrire la raison.</sub>"
