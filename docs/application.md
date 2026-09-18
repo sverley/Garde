@@ -16,8 +16,9 @@ aujourd'hui ni binaire, ni harnais-cœur, ni catalogues. Ce qui est en place ne 
 sur ce qui ne dépend pas d'eux.
 
 **Ce qui est contrôlé :** la forme du processus. Qu'une intégration déclare les engagements qu'elle
-touche, que chaque vérification demandée porte une analyse, qu'une validation existe et qu'elle porte
-sur l'état courant, qu'un passer-outre ouvre une alerte.
+touche, que chaque vérification demandée porte une analyse — ou, s'il n'en est demandé aucune, que
+l'intégration dise pourquoi le produit n'est pas atteint —, qu'une validation existe **là où un
+chemin l'impose** et qu'elle porte sur l'état courant, qu'un passer-outre ouvre une alerte.
 
 **Ce qui ne l'est pas :** le fond. Rien ne sait aujourd'hui *quelles* vérifications devraient être
 demandées, ni si une décision est conforme à son rang, ni si un invariant a son harnais. C'est ce que
@@ -42,6 +43,14 @@ d'exécution privilégiée.
 Ses propres chemins figurent parmi ceux de l'empreinte : le modifier annule les validations en
 cours.
 
+**Il ne juge pas lui-même.** Ce qui se décide vit dans `.github/scripts/verdict.sh`, pris dans la
+base comme le reste ; le workflow procure — les deux arbres, l'empreinte, les commentaires, le
+rapport — et rend le code de sortie. Sans ce découpage, la règle ne serait mesurable nulle part :
+on ne joue pas `pull_request_target` hors ligne.
+
+Les chemins modifiés se constatent en **comparant les deux arbres** (§5) : `git ls-tree` des deux
+côtés quand il répond, le système de fichiers sinon. Aucune API de forge n'est appelée pour cela.
+
 ### `alerte.yml` — passer outre se voit
 
 Une écriture directe dans la référence, ou une fusion dont la tête n'était pas verte, ouvre une issue
@@ -61,6 +70,29 @@ interprétera le code réservé (§4.2).
 ## La validation
 
 Divergence assumée avec l'annexe C, qui emploie des cases à cocher.
+
+### Quand elle est due
+
+**Une validation n'est due que là où l'intégration touche un engagement** (§4.4). Le plancher
+s'écrit **par exclusion** dans `docs/chemins.md` : un chemin modifié qui n'y est pas exclu impose
+une validation, et le rapport dit lequel. Un chemin nouveau que personne n'a exclu en impose donc
+une, au lieu de passer en silence — *un oubli fait jouer plus, jamais moins* (annexe C).
+
+Sont exclus le produit et son manifeste — §6, premier membre : *ajouter, en respectant la garde en
+place, ne demande rien de plus* — et la documentation simple (§4.5). Tout le reste est dedans : la
+description et les catalogues (§5, §4.3), les harnais (§4.2) et la garde en place (§6, second
+membre).
+
+`docs/chemins.md` est la source des chemins **de ce projet**, destinée à être embarquée dans son
+exécutable. Le contrôle la lit dans la base, donc dans l'arbre du juge : rien n'est réclamé à
+l'arbre jugé, et un arbre qui porterait son propre fichier de chemins ne s'allégerait de rien (§1).
+
+De même, l'absence de vérification manuelle n'est plus un refus. Ce qui est exigé à sa place est ce
+que §4.4 demande déjà : que l'analyse dise pourquoi le produit n'est pas atteint. Le contrôle
+constate que la justification est là ; il ne la juge pas (§1). Une vérification déclarée sans son
+analyse reste rouge.
+
+### Sur quel état elle porte
 
 Le contrôle calcule l'**empreinte de l'état validable** — l'arbre restreint, documentation et
 harnais exclus (§4.4) — et l'affiche. Le porteur valide en commentant exactement :
@@ -119,7 +151,9 @@ l'oublie. Chacune doit devenir un besoin ouvert et être rendue à la garde quan
 | Échafaudage | Ce que la garde devra reprendre | Tranche |
 |---|---|---|
 | `empreinte.sh` | §4.4 donne l'empreinte de l'état validé à la garde. Le script est une préfiguration en shell. | A |
-| Déclaration remplie à la main | Le plancher se tire des chemins des entrées comparés à ce qui est modifié. Sans catalogues, il n'y a pas de chemins. | B |
+| `docs/chemins.md` lu dans l'arbre par le workflow | Les chemins sont des attributs d'entrée, embarqués dans l'exécutable à la livraison (§5). Le fichier tient leur place tant que les catalogues n'existent pas. | B |
+| `verdict.sh` | §4.4 : la garde rend le verdict et possède le format de la validation. Le script est une préfiguration en shell de `garde juger`. | C |
+| Déclaration remplie à la main | Le plancher est tiré par le contrôle de `docs/chemins.md` ; la garde le tirera des chemins portés par les entrées. | B |
 | Aucun contrôle d'intégrité | §4.1 n'est pas joué : rien ne vérifie l'unicité d'un identifiant, un renvoi mort, un invariant orphelin. | B |
 | Vérifications demandées à la main | La garde les demande à partir des engagements déclarés et de ceux qui les couvrent par renvoi. C'est le renvoi qu'un humain oublie. | C |
 | Format et verbe de validation | §4.4 : *la garde possède le format et le verbe*. Ici, c'est le workflow qui les tient. | C |
