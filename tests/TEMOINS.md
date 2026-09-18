@@ -15,6 +15,7 @@ validation.
 | `separation_emplois` | poser `std::process::Command` dans un fichier de `src/juger/` | dû au codage |
 | `dependances` | ajouter une dépendance à `Cargo.toml` sans lui écrire son entrée | dû au codage |
 | `empreinte_couvre_le_produit` | poser un fichier sous `src/autoportes/tests/` | **acquis** |
+| `surface_d_appel` | dans `porte`, chercher `--aide` avant d'analyser au lieu d'analyser d'abord | **acquis** |
 
 ## Ce qui a été constaté à l'audit
 
@@ -30,3 +31,21 @@ qu'il promet.
 Les quatre autres sont rouges sur l'amorce, faute de produit. Leur témoin vert est
 dû à la fin du codage, et leur mutation désignée sera jouée à ce moment-là : une
 mutation ne prouve rien tant que le harnais n'est pas vert sans elle.
+
+## `surface_d_appel`, ajouté après le premier audit du codage
+
+Ce harnais est né d'un trou : les six premiers laissaient `garde --inconnue --aide`
+sortir vert, sans nommer la faute. Ajouter une garde demande la même analyse que
+d'en retirer une (§4.2), et les deux témoins ont donc été établis avant de le poser.
+
+**Il sait rougir** : joué sur le code qu'il vient juger, il rougit sur les trois
+défauts et les nomme — quatre options acceptées que l'aide n'annonce pas, `--aide`
+que l'analyse ne connaît pas, un argument surnuméraire appelé verbe inconnu. Seul
+`l_aide_seule_reste_une_reponse` y est vert, et c'est juste : demander l'aide
+fonctionne.
+
+**Il sait verdir** : une correction d'épreuve, écrite pour l'occasion puis jetée, le
+rend vert en entier, et les six autres restent verts avec elle. Le harnais est donc
+satisfiable, et il ne contredit aucun de ses voisins. Cette correction n'est pas
+livrée : elle prouve seulement qu'une sortie existe. Sur cette base verte, la
+mutation désignée a été jouée et rougit.
