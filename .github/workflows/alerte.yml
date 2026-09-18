@@ -63,12 +63,15 @@ jobs:
 
           gh label create alerte --color B60205 \
             --description "Passer outre constaté ; seul un humain ferme" 2>/dev/null || true
+          {
+            echo "$motif"
+            echo
+            echo "La garde signale, elle ne décide pas (§1). Cette issue reste ouverte jusqu'"'"'à ce"
+            echo "qu'"'"'un humain constate ce qui s'"'"'est passé et le lève explicitement — soit parce"
+            echo "que c'"'"'était légitime, en écrivant pourquoi, soit en portant un besoin qui répare."
+            echo
+            echo "<sub>Ouverte automatiquement. Ne pas fermer sans écrire la raison.</sub>"
+          } > /tmp/alerte.md
+
           gh issue create --repo "$DEPOT" --label alerte \
-            --title "Alerte : passer outre" \
-            --body "$motif
-
-La garde signale, elle ne décide pas (§1). Cette issue reste ouverte jusqu'à ce qu'un humain
-constate ce qui s'est passé et le lève explicitement — soit parce que c'était légitime et
-pourquoi, soit en portant un besoin qui répare.
-
-<sub>Ouvert automatiquement. Ne pas fermer sans écrire la raison.</sub>"
+            --title "Alerte : passer outre" --body-file /tmp/alerte.md
