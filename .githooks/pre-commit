@@ -21,6 +21,14 @@ fi
 echo "· empreinte"
 bash .github/scripts/empreinte.sh . .garde/empreinte-exclusions > /dev/null
 
+# Le harnais du plancher ne se joue que si la règle qu'il juge existe : tant
+# qu'elle est due au codage, il rougirait à chaque commit et cesserait d'être lu
+# (§4.2). Son rouge est alors porté par l'issue, pas par le crochet.
+if [ -f .github/scripts/verdict.sh ]; then
+  echo "· plancher"
+  bash tests/plancher.sh > /dev/null
+fi
+
 if [ -f Cargo.toml ]; then
   echo "· forme"
   cargo fmt --all -- --check
