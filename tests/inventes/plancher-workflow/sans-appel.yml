@@ -1,0 +1,16 @@
+# Témoin rouge de `le_controle_appelle_le_verdict`.
+#
+# Rien ne vient de l'arbre jugé — l'autre mesure reste verte — mais le contrôle
+# ne demande son verdict à personne. Il juge de nouveau dans le YAML, ce que
+# l'audit de #20 a justement sorti de là.
+name: sans-appel
+on:
+  pull_request_target:
+    types: [opened]
+jobs:
+  juger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verdict
+        run: |
+          grep -q '^## Déclaration' /tmp/corps.txt || echo "rouge"

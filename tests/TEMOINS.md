@@ -1,0 +1,70 @@
+# Témoins des harnais de #20
+
+Un harnais qui ne sait pas rougir ne garde rien, et un harnais rouge en permanence
+cesse d'être lu (§4.2). Chaque mesure porte donc sa mutation désignée et son état
+attendu sur la référence.
+
+Ce fichier est un harnais : il vit hors de l'empreinte, et l'amender n'annule aucune
+validation.
+
+## Les mutations désignées
+
+Deux familles, parce qu'il y a deux choses à garder. La **règle** — ce que rend
+`verdict.sh` — est gardée par les projets inventés, qui portent leur propre liste de
+chemins : une mutation de la règle les fait rougir. La **liste du dépôt** —
+`docs/chemins.md` — est gardée par la section « liste de chemins du dépôt » : une
+mutation de la liste la fait rougir, et ne touche pas aux inventés. C'est voulu, et
+c'est la raison d'être des deux sections.
+
+| Mesure | Mutation désignée | Ce qui rougit | Témoin vert |
+|---|---|---|---|
+| plancher par exclusion | dans `verdict.sh`, inverser le sens de l'exclusion | `catalogue-touche`, `chemin-inconnu`, `doc-simple`, `produit-seul`… | dû au codage |
+| la liste est lue | dans `verdict.sh`, tout exclure sans lire la liste | les quatre cas à exigences | dû au codage |
+| l'oubli fait jouer plus | dans `docs/chemins.md`, remplacer `src/*` par `*` | la liste du dépôt, sur tout ce qui est dû | dû au codage |
+| le chemin est nommé | dans `verdict.sh`, rendre `plancher` sans son argument | tous les cas à exigences | dû au codage |
+| un harnais appelle une validation (§4.2) | ajouter `tests/*` à `docs/chemins.md` | `tests/plancher.sh`, dans la liste du dépôt | dû au codage |
+| la garde en place aussi (§6) | ajouter `.github/*` à `docs/chemins.md` | `garde.yml` et le gabarit, dans la liste du dépôt | dû au codage |
+| la documentation simple, non (§4.5) | retirer `docs/application.md` de `docs/chemins.md` | `docs/application.md`, dans la liste du dépôt | dû au codage |
+| la justification est exigée | dans `verdict.sh`, accepter une section vide | `sans-vm-muet` | dû au codage |
+| une analyse manquante reste rouge | dans `verdict.sh`, renommer l'exigence rendue | `vm-sans-analyse` | dû au codage |
+| les chemins viennent du juge | dans `garde.yml`, appeler le verdict avec `arbre/docs/chemins.md` | `chemins_pris_dans_la_base` | dû au codage |
+| le contrôle demande son verdict | dans `garde.yml`, retirer l'appel | `le_controle_appelle_le_verdict` | dû au codage |
+| aucune forge, aucun git | ajouter un `git rev-parse` à `verdict.sh` | `aucune_forge` | dû au codage |
+| l'appel mal formé se distingue | dans `verdict.sh`, rendre 1 au lieu de 2 | `appel-mal-forme` | dû au codage |
+
+Les témoins de la plomberie ont en outre leurs **workflows inventés**, qui ne
+dépendent d'aucun codage : `conforme.yml` ne fait rougir aucune mesure,
+`chemins-de-l-arbre.yml` et `sans-appel.yml` font rougir la leur et elle seule. Le
+harnais sort **2** si l'un d'eux ment : une mesure qui ne sait pas rougir ne garde
+rien, une mesure qui rougit sur le conforme rougira partout.
+
+## Ce qui a été constaté à l'audit
+
+**Le harnais sait verdir.** Une épreuve a été écrite pour l'occasion puis jetée : un
+`verdict.sh` minimal, une `docs/chemins.md` reprise d'un cas inventé, et une ligne
+d'appel dans `garde.yml`. Sur cette base, les trois sections passent au vert et le
+harnais sort 0. Cette épreuve **n'est pas livrée** : elle prouve seulement qu'une
+sortie existe, et que les exigences attendues sont atteignables — un harnais qu'on
+n'a jamais vu vert peut n'être satisfaisable par rien.
+
+**Le harnais sait rougir.** Les treize mutations ci-dessus ont été jouées **sur cette
+base verte**, une à une, chacune rendue après coup. Les treize rougissent, et chacune
+nomme ce qu'on attendait d'elle. Une mutation ne prouve rien tant que le harnais
+n'est pas vert sans elle : c'est pourquoi elles ont été jouées là et pas sur l'état
+livré.
+
+**L'état livré est rouge, et c'est l'état attendu.** Trois rouges : `verdict.sh`
+n'existe pas, `docs/chemins.md` non plus, et `garde.yml` ne demande son verdict à
+personne. Ce sont les trois choses que le codage doit poser. Aucune dette n'est
+masquée derrière un vert.
+
+**Ce qui n'est pas mesuré ici, et pourquoi.** L'absence de git est vérifiée
+lexicalement sur `verdict.sh`, non en rejouant les cas dans un répertoire sans dépôt.
+Le contrat rend la seconde mesure superflue : la règle reçoit trois fichiers en
+arguments et ne connaît pas d'arbre. Si un jour elle en reçoit un, la mesure devra
+changer de forme.
+
+**La plomberie de la forge n'est pas jouée.** `pull_request_target`, les appels
+d'API, l'écriture du rapport : ni hors ligne, ni déterministes. Les deux mesures
+lexicales disent que le contrôle demande son verdict et d'où il prend ses chemins ;
+le reste est demandé en vérification manuelle.

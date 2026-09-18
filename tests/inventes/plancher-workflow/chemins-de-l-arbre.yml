@@ -1,0 +1,16 @@
+# Témoin rouge de `chemins_pris_dans_la_base`.
+#
+# Le contrôle appelle bien le verdict — l'autre mesure reste verte — mais il lui
+# donne les chemins que porte l'arbre jugé. Un projet qui s'exclut lui-même du
+# plancher passerait alors au vert : c'est l'intrusion inversée que §1 interdit.
+name: chemins-de-l-arbre
+on:
+  pull_request_target:
+    types: [opened]
+jobs:
+  juger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verdict
+        run: |
+          bash base/.github/scripts/verdict.sh arbre/docs/chemins.md /tmp/modifications /tmp/corps.txt
