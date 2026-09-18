@@ -16,12 +16,23 @@ pub enum Anterieur {
     RacineDeBranche,
 }
 
+/// Ce que l'appel demande de lui-même, plutôt qu'un travail sur un projet.
+///
+/// Portée par l'appel et non détectée avant lui : une demande d'aide reste
+/// soumise à l'analyse, et une faute l'emporte sur elle.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Demande {
+    Aide,
+    Version,
+}
+
 /// Un appel analysé.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Appel {
     pub verbe: Option<String>,
     pub projet: PathBuf,
     pub anterieur: Anterieur,
+    pub demande: Option<Demande>,
 }
 
 /// Ce qui rend un appel fautif.
@@ -30,6 +41,8 @@ pub enum Erreur {
     OptionInconnue(String),
     ValeurManquante(String),
     VerbeInconnu(String),
+    /// Un mot de trop : le verbe était déjà pris. Ce n'est pas un verbe inconnu.
+    ArgumentEnTrop(String),
 }
 
 impl std::fmt::Display for Erreur {
@@ -40,6 +53,7 @@ impl std::fmt::Display for Erreur {
             Erreur::OptionInconnue(option) => write!(f, "option inconnue : {option}"),
             Erreur::ValeurManquante(option) => write!(f, "{option} attend une valeur"),
             Erreur::VerbeInconnu(verbe) => write!(f, "verbe inconnu : {verbe}"),
+            Erreur::ArgumentEnTrop(mot) => write!(f, "argument en trop : {mot}"),
         }
     }
 }
@@ -62,39 +76,51 @@ fn projet_par_defaut() -> PathBuf {
     std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
 }
 
+/// Une valeur ne peut pas être une autre option : `--projet --anterieur` laisse
+/// `--projet` sans valeur, il ne lui donne pas `--anterieur` pour valeur.
+fn valeur<'a>(
+    reste: &mut impl Iterator<Item = &'a String>,
+    option: &str,
+) -> Result<&'a String, Erreur> {
+    match reste.next() {
+        Some(valeur) if !valeur.starts_with('-') => Ok(valeur),
+        _ => Err(Erreur::ValeurManquante(option.to_string())),
+    }
+}
+
 /// Analyse les arguments, celui du programme exclu.
+///
+/// Tout passe par ici, l'aide et la version comprises : rien n'est reconnu en
+/// amont de l'analyse, sans quoi une faute posée à côté d'une demande d'aide
+/// passerait au vert.
 pub fn analyser(arguments: &[String]) -> Result<Appel, Erreur> {
     let mut verbe: Option<String> = None;
     let mut projet: Option<PathBuf> = None;
     let mut anterieur = Anterieur::RacineDeBranche;
+    let mut demande: Option<Demande> = None;
 
     let mut reste = arguments.iter();
     while let Some(argument) = reste.next() {
         match argument.as_str() {
-            "--projet" => {
-                let valeur = reste
-                    .next()
-                    .ok_or_else(|| Erreur::ValeurManquante("--projet".to_string()))?;
-                projet = Some(PathBuf::from(valeur));
-            }
+            "--aide" => demande = demande.or(Some(Demande::Aide)),
+            "--version" => demande = demande.or(Some(Demande::Version)),
+            "--projet" => projet = Some(PathBuf::from(valeur(&mut reste, "--projet")?)),
             "--anterieur" => {
-                let valeur = reste
-                    .next()
-                    .ok_or_else(|| Erreur::ValeurManquante("--anterieur".to_string()))?;
+                let donne = valeur(&mut reste, "--anterieur")?;
                 // Reconnu, pas résolu : ce qui départage est la forme du mot,
                 // jamais ce que le disque en dirait.
-                anterieur = if est_empreinte_de_commit(valeur) {
-                    Anterieur::Commit(valeur.clone())
+                anterieur = if est_empreinte_de_commit(donne) {
+                    Anterieur::Commit(donne.clone())
                 } else {
-                    Anterieur::Chemin(PathBuf::from(valeur))
+                    Anterieur::Chemin(PathBuf::from(donne))
                 };
             }
             option if option.starts_with('-') => {
                 return Err(Erreur::OptionInconnue(option.to_string()));
             }
             mot if verbe.is_none() => verbe = Some(mot.to_string()),
-            // Le verbe est déjà pris : le second mot n'en est pas un.
-            mot => return Err(Erreur::VerbeInconnu(mot.to_string())),
+            // Le verbe est déjà pris : ce mot n'en est pas un second, il est en trop.
+            mot => return Err(Erreur::ArgumentEnTrop(mot.to_string())),
         }
     }
 
@@ -102,5 +128,6 @@ pub fn analyser(arguments: &[String]) -> Result<Appel, Erreur> {
         verbe,
         projet: projet.unwrap_or_else(projet_par_defaut),
         anterieur,
+        demande,
     })
 }
