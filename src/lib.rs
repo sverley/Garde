@@ -41,6 +41,21 @@ impl Sortie {
 /// Le verdict part sur la sortie standard, le message sur la sortie d'erreur.
 /// Séparer ici plutôt que dans le binaire rend la règle mesurable.
 pub fn executer(appel: &appel::Appel) -> (Sortie, String, String) {
+    // Une demande passe d'abord : elle a traversé l'analyse comme le reste, donc
+    // aucune faute ne l'accompagne. Demandée, l'aide est une réponse — sortie
+    // standard, code vert — et c'est ce qui la sépare de l'aide affichée sur une faute.
+    match appel.demande {
+        Some(appel::Demande::Aide) => return (Sortie::Vert, aide(), String::new()),
+        Some(appel::Demande::Version) => {
+            return (
+                Sortie::Vert,
+                env!("CARGO_PKG_VERSION").to_string(),
+                String::new(),
+            )
+        }
+        None => {}
+    }
+
     match &appel.verbe {
         // Aucun verbe n'existe en A1 : `garde empreinte` est A2 (#5). Tout verbe
         // est donc inconnu, et c'est un mauvais appel — pas un rouge. Un rouge
@@ -60,7 +75,9 @@ pub fn executer(appel: &appel::Appel) -> (Sortie, String, String) {
     }
 }
 
-/// L'aide. Exacte et courte : ce que l'outil prend, rien de plus.
+/// L'aide. Exacte et courte, et elle annonce **toute** la surface d'appel :
+/// une option acceptée que l'aide tait décrirait l'outil plus petit qu'il n'est
+/// (§4.5), et une option annoncée que l'analyse ignore, plus grand.
 pub fn aide() -> String {
     format!(
         "\
@@ -83,25 +100,9 @@ Aucun verbe n'est encore servi.",
 
 /// La porte : de la ligne de commande brute aux deux canaux et au code.
 ///
-/// Elle vit dans le cœur, non dans le binaire, pour être atteignable sans
-/// lancer un processus. Le binaire ne fait que poser les canaux et sortir.
+/// Elle analyse d'abord, sans exception : rien n'est reconnu en amont. Une
+/// faute l'emporte donc sur une demande d'aide, quel que soit leur ordre.
 pub fn porte(arguments: &[String]) -> (Sortie, String, String) {
-    // Demandées, l'aide et la version sont des réponses : sortie standard,
-    // code vert. C'est ce qui les sépare de la même aide affichée sur une faute.
-    if arguments
-        .iter()
-        .any(|a| a == "--aide" || a == "-a" || a == "--help" || a == "-h")
-    {
-        return (Sortie::Vert, aide(), String::new());
-    }
-    if arguments.iter().any(|a| a == "--version" || a == "-V") {
-        return (
-            Sortie::Vert,
-            env!("CARGO_PKG_VERSION").to_string(),
-            String::new(),
-        );
-    }
-
     match appel::analyser(arguments) {
         Ok(appel) => executer(&appel),
         Err(faute) => (Sortie::MauvaisAppel, String::new(), faute.to_string()),
