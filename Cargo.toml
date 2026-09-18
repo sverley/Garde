@@ -1,11 +1,14 @@
-# Amorce posée par l'audit : le strict minimum pour que le harnais tourne.
-# Ni `rust-version`, ni dépendance : `manifeste` et `dependances` sont rouges,
-# et c'est voulu. Le codage les rend verts.
+# Le manifeste. Toute caisse ajoutée ici doit avoir son entrée dans
+# `docs/catalogues/decisions.md` : le harnais `dependances` mesure la
+# bijection dans les deux sens.
 
 [package]
 name = "garde"
 version = "0.0.0"
 edition = "2021"
+# La version minimale tenue sur les trois cibles. Rien ne la mesure avant A3
+# (#6) : c'est une déclaration, pas une couverture (§4.2).
+rust-version = "1.74"
 
 [lib]
 name = "garde"
