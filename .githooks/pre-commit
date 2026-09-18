@@ -21,6 +21,9 @@ fi
 echo "· empreinte"
 bash .github/scripts/empreinte.sh . .garde/empreinte-exclusions > /dev/null
 
+echo "· workflows"
+bash tests/workflows.sh
+
 if [ -f Cargo.toml ]; then
   echo "· forme"
   cargo fmt --all -- --check

@@ -41,8 +41,10 @@ jobs:
         with:
           ref: ${{ github.event.repository.default_branch }}
           path: base
+          persist-credentials: false
 
-      - name: Verdict
+      - name: L'intégration, telle que la forge la voit
+        id: integration
         env:
           GH_TOKEN: ${{ github.token }}
           DEPOT: ${{ github.repository }}
@@ -50,25 +52,56 @@ jobs:
         run: |
           set -euo pipefail
 
-          # --- L'intégration, telle que la forge la voit -------------------
           gh api "repos/$DEPOT/pulls/$NUMERO" > /tmp/pr.json
           brouillon=$(jq -r '.draft' /tmp/pr.json)
-          tete=$(jq -r '.head.sha' /tmp/pr.json)
-          porteur=$(jq -r '.user.login' /tmp/pr.json)
           jq -r '.body // ""' /tmp/pr.json > /tmp/corps.txt
+
+          # L'état de brouillon est décidé ICI, avant toute récupération : les
+          # étapes qui suivent s'y conditionnent. Rien n'est joué sur un
+          # brouillon (annexe C).
+          {
+            echo "brouillon=$brouillon"
+            echo "tete=$(jq -r '.head.sha' /tmp/pr.json)"
+            echo "porteur=$(jq -r '.user.login' /tmp/pr.json)"
+          } >> "$GITHUB_OUTPUT"
 
           if [ "$brouillon" = "true" ]; then
             echo "Brouillon : rien n'est joué (annexe C)."
-            exit 0
           fi
 
-          # --- L'arbre de l'intégration, lu et jamais exécuté --------------
-          mkdir arbre && cd arbre
-          git init -q
-          git remote add origin "https://github.com/$DEPOT.git"
-          git -c protocol.version=2 fetch -q --depth=1 origin "refs/pull/$NUMERO/head"
-          git checkout -q FETCH_HEAD
-          cd ..
+      # DANGER — cette étape récupère la tête de l'intégration alors que le
+      # workflow tourne sous `pull_request_target`, avec un jeton en écriture
+      # sur la base. C'est, à l'œil, la forme même du motif dangereux, et elle
+      # est plus banale qu'un `fetch` écrit à la main : ce qui la rend sûre doit
+      # se lire ici, pas seulement en tête du fichier.
+      #
+      # Ce qui la rend sûre, et rien d'autre : RIEN de `arbre/` n'est exécuté,
+      # sourcé, construit ni installé. Seuls des noms de fichiers et du texte en
+      # sont lus, par un script pris dans `base/`. Le jour où une commande vise
+      # `arbre/`, cette étape devient une porte ouverte sur la référence.
+      #
+      # `persist-credentials: false` — le jeton sert à lire et ne reste pas dans
+      # la configuration du dépôt récupéré (contrainte `jeton hors du disque`).
+      - name: Arbre de l'intégration — lu, jamais exécuté
+        if: steps.integration.outputs.brouillon != 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number || github.event.issue.number }}/head
+          path: arbre
+          persist-credentials: false
+
+      - name: Verdict
+        if: steps.integration.outputs.brouillon != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPOT: ${{ github.repository }}
+          NUMERO: ${{ github.event.pull_request.number || github.event.issue.number }}
+          TETE: ${{ steps.integration.outputs.tete }}
+          PORTEUR: ${{ steps.integration.outputs.porteur }}
+        run: |
+          set -euo pipefail
+          tete="$TETE"
+          porteur="$PORTEUR"
 
           empreinte=$(bash base/.github/scripts/empreinte.sh arbre base/.garde/empreinte-exclusions)
           echo "État validable : $empreinte"
