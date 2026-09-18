@@ -49,3 +49,21 @@ rend vert en entier, et les six autres restent verts avec elle. Le harnais est d
 satisfiable, et il ne contredit aucun de ses voisins. Cette correction n'est pas
 livrée : elle prouve seulement qu'une sortie existe. Sur cette base verte, la
 mutation désignée a été jouée et rougit.
+
+## Amendement pour la convention GNU
+
+Le porteur a tranché : options longues, valeur au mot suivant sans la forme `=`,
+`--` pour fermer les options. Un test a dû être **amendé**, et non seulement
+ajouté — §4.2 demande pour cela la même analyse que pour en retirer un.
+
+`une_option_privee_de_sa_valeur_ne_se_laisse_pas_masquer` exigeait que
+`--projet --aide` soit un mauvais appel nommant `--projet`. En convention GNU,
+c'est un appel légitime : le projet s'appelle `--aide`. Le test est remplacé par
+`une_valeur_est_prise_au_mot_suivant_quel_qu_il_soit`, qui mesure la nouvelle
+règle *et* garde l'ancienne inquiétude : avalée comme valeur, `--aide` n'est plus
+une demande, donc rien ne passe au vert. Le trou d'origine reste tenu par
+`une_faute_l_emporte_sur_une_demande_d_aide`, qui n'est pas touché.
+
+Sept vérifications nouvelles ou amendées, rouges sur le code qu'elles jugent,
+vertes sous une correction d'épreuve écrite puis jetée — les 41 vérifications le
+sont alors, sans qu'aucun harnais en contredise un autre.

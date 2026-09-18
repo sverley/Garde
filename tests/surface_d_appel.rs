@@ -133,19 +133,62 @@ fn une_faute_l_emporte_sur_une_demande_d_aide() {
 }
 
 #[test]
-fn une_option_privee_de_sa_valeur_ne_se_laisse_pas_masquer() {
+fn une_valeur_est_prise_au_mot_suivant_quel_qu_il_soit() {
+    // Convention GNU, et ligne directrice 7 de POSIX : une valeur d'option peut
+    // commencer par un tiret. `ls --format --help` prend `--help` pour valeur et
+    // le dit. Refuser une valeur en tiret rendrait innommable un chemin qui en
+    // porte un, sans que `--` puisse l'aider : `--` protège les opérandes, pas
+    // les valeurs d'option.
+    //
+    // Le trou que ce fichier garde ne se rouvre pas pour autant : `--aide` avalé
+    // par `--projet` n'est plus une demande d'aide, donc rien ne passe au vert —
+    // l'appel reste sans verbe, et `porte` le refuse.
     let arguments: Vec<String> = ["--projet", "--aide"]
         .iter()
         .map(|a| a.to_string())
         .collect();
-    let (sortie, standard, erreur) = garde::porte(&arguments);
+    let appel = analyser(&arguments).expect("une valeur en tiret reste une valeur");
+    assert_eq!(appel.projet, std::path::PathBuf::from("--aide"));
+    assert!(
+        appel.demande.is_none(),
+        "avalée comme valeur, `--aide` n'est plus une demande"
+    );
+
+    let (sortie, standard, _) = garde::porte(&arguments);
     assert_eq!(
         sortie,
         Sortie::MauvaisAppel,
-        "une option ne prend pas une autre option pour valeur"
+        "sans verbe, l'appel reste refusé : aucune faute ne passe au vert"
     );
-    assert!(standard.is_empty());
-    assert!(erreur.contains("--projet"), "reçu : {erreur}");
+    assert!(
+        standard.is_empty(),
+        "et rien ne sort sur la sortie standard"
+    );
+}
+
+#[test]
+fn une_option_sans_valeur_en_fin_de_ligne_est_refusee() {
+    // La seule valeur manquante qui reste : il n'y a plus de mot après.
+    let faute = analyser(&["--projet".to_string()]).expect_err("il n'y a rien à prendre");
+    assert_eq!(faute, Erreur::ValeurManquante("--projet".to_string()));
+}
+
+#[test]
+fn la_forme_avec_egal_est_refusee_en_nommant_l_option() {
+    // Écartée : les valeurs se donnent au mot suivant. Une forme voisine d'une
+    // option connue doit être refusée en la nommant, jamais rangée parmi les
+    // inconnues (§4.1) — sans quoi l'appelant relit l'aide sans y voir sa faute.
+    let faute = analyser(&["--projet=/ailleurs".to_string()])
+        .expect_err("la forme avec égal n'est pas servie");
+    let message = faute.to_string();
+    assert!(
+        message.contains("--projet"),
+        "l'option doit être nommée : {message}"
+    );
+    assert!(
+        !message.contains("option inconnue"),
+        "`--projet=…` n'est pas une option inconnue, c'est une forme non servie : {message}"
+    );
 }
 
 #[test]
