@@ -67,14 +67,24 @@ normaliser() { grep -v '^[[:space:]]*$' | sort; }
 # Les chemins qui font le plancher viennent de l'arbre du juge. Les prendre dans
 # l'arbre jugé rendrait la garde désarmable par le projet qu'elle juge : il lui
 # suffirait de s'exclure lui-même (§1, §5).
+#
+# Le texte est d'abord préparé : les lignes de commentaire sont retirées — un
+# commentaire ne s'exécute pas, et le reprocher est un faux rouge — et les
+# continuations de ligne sont recollées, un appel coupé par un `\` restant un
+# seul appel. Sans cela la mesure jugeait des fragments, et reprochait à un appel
+# correct de l'être sur deux lignes.
 chemins_pris_dans_la_base() {
-  grep -n -E 'arbre/[^[:space:]"]*chemins' "$1" | sed 's/^/  ligne /'
-  awk '
+  local texte
+  texte=$(sed '/^[[:space:]]*#/d' "$1" | sed -e :a -e '/\\$/N; s/\\\n[[:space:]]*/ /; ta')
+  printf '%s\n' "$texte" \
+    | grep -E 'arbre/[^[:space:]"]*chemins' \
+    | sed 's/^[[:space:]]*/  chemins pris dans l'"'"'arbre jugé : /'
+  printf '%s\n' "$texte" | awk '
     /verdict\.sh/ {
       if ($0 !~ /verdict\.sh[[:space:]]+"?base\//)
-        print "  ligne " NR " : verdict.sh appelé sans chemins pris dans base/"
+        print "  verdict.sh appelé sans chemins pris dans base/ :" substr($0, 1, 60)
     }
-  ' "$1"
+  '
 }
 
 # Le contrôle ne juge plus dans le YAML : il demande son verdict au script, qui

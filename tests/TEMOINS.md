@@ -68,3 +68,26 @@ changer de forme.
 d'API, l'écriture du rapport : ni hors ligne, ni déterministes. Les deux mesures
 lexicales disent que le contrôle demande son verdict et d'où il prend ses chemins ;
 le reste est demandé en vérification manuelle.
+
+## Amendement de `chemins_pris_dans_la_base`, à l'audit du codage
+
+La mesure reprochait deux choses au contrôle produit par le codage, et les deux étaient **fausses** :
+une occurrence de `verdict.sh` dans un commentaire d'en-tête, et un appel correct dont l'argument
+`base/docs/chemins.md` vivait sur la ligne suivante, après une continuation `\`. Elle lisait ligne à
+ligne, donc elle jugeait des fragments.
+
+Amender une garde demande la même analyse qu'en ajouter une (§4.2). Ce qui a été établi avant de
+livrer l'amendement :
+
+- **La mesure sait toujours rougir.** Les deux mutations désignées ont été rejouées sur le contrôle
+  du codage, qui est vert sans elles : appeler le verdict avec `arbre/docs/chemins.md` rougit, retirer
+  l'appel rougit. Le reproche nomme désormais le texte en cause au lieu d'un numéro de ligne, qui ne
+  voulait plus rien dire après recollement.
+- **Les trois témoins inventés tiennent** : `conforme.yml` ne fait rougir aucune mesure,
+  `chemins-de-l-arbre.yml` et `sans-appel.yml` font rougir la leur et elle seule.
+- **Ce que l'amendement retire est exactement ce qui était faux.** Un commentaire ne s'exécute pas ;
+  un appel coupé par un `\` reste un seul appel. Aucune violation réelle ne cesse d'être vue : une
+  ligne active qui prend ses chemins dans l'arbre jugé rougit toujours, sur une ligne comme sur deux.
+
+Un faux rouge n'est pas anodin : il force celui qui code à se contorsionner pour satisfaire une
+mesure qui a tort, et c'est ainsi qu'on finit par réécrire le harnais qui gêne.
