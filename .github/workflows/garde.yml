@@ -1,0 +1,159 @@
+name: garde
+
+# Contrôle d'une intégration (§4.4), jugé depuis la référence (§5).
+#
+# DANGER — `pull_request_target` s'exécute avec un jeton en écriture sur la base.
+# Ce workflow ne doit JAMAIS exécuter, sourcer, construire ni installer quoi que
+# ce soit venu de l'intégration. Il ne lit que des noms de fichiers et du texte.
+# C'est ce qui rend sûr de le lancer depuis un contexte privilégié, et c'est ce
+# qui empêche une intégration de désarmer sa propre garde : le fichier de ce
+# workflow, le script d'empreinte et la liste d'exclusions sont pris dans la
+# base, jamais dans la tête de l'intégration.
+#
+# Tant que le binaire n'existe pas (§6), ce workflow contrôle la FORME du
+# processus, pas le fond : il ne sait pas quelles vérifications manuelles
+# devraient être demandées. C'est une dette, portée par un besoin ouvert.
+
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+  issue_comment:
+    types: [created, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: garde-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  garde:
+    if: >-
+      github.event_name == 'pull_request_target' ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request != null)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Référence — le contrôle vient de la base
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: base
+
+      - name: Verdict
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPOT: ${{ github.repository }}
+          NUMERO: ${{ github.event.pull_request.number || github.event.issue.number }}
+        run: |
+          set -euo pipefail
+
+          # --- L'intégration, telle que la forge la voit -------------------
+          gh api "repos/$DEPOT/pulls/$NUMERO" > /tmp/pr.json
+          brouillon=$(jq -r '.draft' /tmp/pr.json)
+          tete=$(jq -r '.head.sha' /tmp/pr.json)
+          porteur=$(jq -r '.user.login' /tmp/pr.json)
+          jq -r '.body // ""' /tmp/pr.json > /tmp/corps.txt
+
+          if [ "$brouillon" = "true" ]; then
+            echo "Brouillon : rien n'est joué (annexe C)."
+            exit 0
+          fi
+
+          # --- L'arbre de l'intégration, lu et jamais exécuté --------------
+          mkdir arbre && cd arbre
+          git init -q
+          git remote add origin "https://github.com/$DEPOT.git"
+          git -c protocol.version=2 fetch -q --depth=1 origin "refs/pull/$NUMERO/head"
+          git checkout -q FETCH_HEAD
+          cd ..
+
+          empreinte=$(bash base/.github/scripts/empreinte.sh arbre base/.garde/empreinte-exclusions)
+          echo "État validable : $empreinte"
+
+          # --- Déclaration (§4.4) -----------------------------------------
+          refus=()
+          grep -q '^## Déclaration' /tmp/corps.txt \
+            || refus+=("La description ne porte pas de section \`## Déclaration\`.")
+          grep -q '^## Vérifications manuelles' /tmp/corps.txt \
+            || refus+=("La description ne porte pas de section \`## Vérifications manuelles\`.")
+
+          # Une vérification demandée sans analyse ne peut pas être validée.
+          demandees=$(grep -c '^### VM-' /tmp/corps.txt || true)
+          if [ "$demandees" -eq 0 ]; then
+            refus+=("Aucune vérification manuelle demandée. Si l'intégration n'en appelle aucune, l'écrire et dire pourquoi.")
+          fi
+          sans_analyse=$(awk '
+            /^### VM-/ { nom=$2; vu=0; next }
+            /^#/       { if (nom != "" && vu == 0) print nom; nom=""; next }
+            NF         { if (nom != "") vu=1 }
+            END        { if (nom != "" && vu == 0) print nom }
+          ' /tmp/corps.txt)
+          if [ -n "$sans_analyse" ]; then
+            refus+=("Vérifications sans analyse : $(echo "$sans_analyse" | tr '\n' ' ')")
+          fi
+
+          # --- Validation (§4.4) ------------------------------------------
+          # Seul le porteur valide, et une validation vaut pour l'état validé :
+          # elle cite l'empreinte. Une validation posée avant un push ne porte
+          # donc pas sur l'état d'après, sans qu'aucune règle ne l'énonce.
+          gh api --paginate "repos/$DEPOT/issues/$NUMERO/comments" \
+            > /tmp/commentaires.json
+          valide=$(jq -r --arg p "$porteur" --arg e "$empreinte" '
+            [ .[] | select(.user.login == $p)
+                  | select(.body | test("(?m)^Validé[[:space:]]*:[[:space:]]*" + $e + "[[:space:]]*$")) ]
+            | length' /tmp/commentaires.json)
+
+          if [ "$valide" -eq 0 ]; then
+            refus+=("Aucune validation du porteur (\`$porteur\`) pour l'état \`$empreinte\`.")
+          fi
+
+          # --- Enregistrement, écrit par le compte de la plateforme --------
+          # Support inimitable (§4.4) : aucun contributeur ne peut poster sous
+          # ce compte. La garde possédera le format et le verbe ; ici, c'est un
+          # échafaudage provisoire.
+          {
+            echo "<!-- garde -->"
+            echo "### Garde"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| État validable | \`$empreinte\` |"
+            echo "| Tête | \`$tete\` |"
+            echo "| Porteur | @$porteur |"
+            echo "| Vérifications demandées | $demandees |"
+            if [ ${#refus[@]} -eq 0 ]; then
+              echo "| Verdict | **vert** |"
+              echo
+              echo "Chaque vérification demandée est analysée, et le porteur a validé cet état."
+            else
+              echo "| Verdict | **rouge** |"
+              echo
+              for r in "${refus[@]}"; do echo "- $r"; done
+              echo
+              echo "Pour valider, le porteur commente exactement :"
+              echo
+              echo '```'
+              echo "Validé: $empreinte"
+              echo '```'
+            fi
+            echo
+            echo "<sub>Contrôle joué depuis la référence. Aucun code de l'intégration n'a été exécuté."
+            echo "Tant que le binaire n'existe pas, seule la forme du processus est contrôlée.</sub>"
+          } > /tmp/rapport.md
+
+          ancien=$(jq -r '[ .[] | select(.body | startswith("<!-- garde -->")) ] | last | .id // empty' \
+            /tmp/commentaires.json)
+          if [ -n "$ancien" ]; then
+            gh api -X PATCH "repos/$DEPOT/issues/comments/$ancien" -F body=@/tmp/rapport.md > /dev/null
+          else
+            gh api -X POST "repos/$DEPOT/issues/$NUMERO/comments" -F body=@/tmp/rapport.md > /dev/null
+          fi
+
+          if [ ${#refus[@]} -ne 0 ]; then
+            printf '%s\n' "${refus[@]}" >&2
+            exit 1
+          fi
+          echo "Vert : validé pour l'état $empreinte."

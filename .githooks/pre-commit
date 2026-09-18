@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Crochet de pré-commit — moment d'exécution choisi par le projet (§5).
+#
+# Rapide par construction : ce qui dure se joue au pré-push et au passage
+# complet. Un budget dépassé se signale, il ne s'attend pas.
+#
+# Il ne prouve rien : un crochet se contourne, et il tourne sur le poste de qui
+# pourrait vouloir le contourner. Ce qui tient la continuité, c'est le rejeu au
+# niveau supérieur (§4.4).
+
+set -euo pipefail
+debut=$(date +%s)
+
+echo "· scripts"
+if command -v shellcheck > /dev/null 2>&1; then
+  shellcheck .github/scripts/*.sh .githooks/pre-commit
+else
+  echo "  shellcheck absent — sauté ici, exigé dans le passage complet"
+fi
+
+echo "· empreinte"
+bash .github/scripts/empreinte.sh . .garde/empreinte-exclusions > /dev/null
+
+if [ -f Cargo.toml ]; then
+  echo "· forme"
+  cargo fmt --all -- --check
+  echo "· cœur"
+  cargo test --lib --quiet
+fi
+
+duree=$(( $(date +%s) - debut ))
+echo "· ${duree}s"
+if [ "$duree" -gt 10 ]; then
+  echo "  budget dépassé : trier, pas attendre (annexe B)" >&2
+fi
