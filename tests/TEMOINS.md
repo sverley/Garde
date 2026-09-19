@@ -91,3 +91,18 @@ livrer l'amendement :
 
 Un faux rouge n'est pas anodin : il force celui qui code à se contorsionner pour satisfaire une
 mesure qui a tort, et c'est ainsi qu'on finit par réécrire le harnais qui gêne.
+
+## Amendement du branchement, à l'audit du second codage
+
+Le crochet jouait le harnais avec `> /dev/null`. Celui qui code ne voyait donc que « 14 rouge(s) »
+sur l'erreur standard, et devait **ouvrir le harnais** pour savoir lesquels — précisément ce qu'on
+lui demande de ne pas faire. §5 dit l'inverse : *le verdict lui vient des moments que le projet a
+choisis, **avec le message d'échec**, et il n'ouvre pas le code du harnais.* Le branchement
+contredisait le document.
+
+Le crochet capture désormais la sortie et ne la montre que si le harnais rougit : le vert reste
+court, le rouge arrive entier. Constaté avant de livrer : sur un arbre vert le crochet ne dit que
+`· plancher` et rend 0 ; sur le même arbre avec `src/**` élargi en `**`, il rend 1 et affiche les
+huit rouges nommés.
+
+Le défaut venait de l'audit, pas du codage. Il a été relevé par celui qui codait.
