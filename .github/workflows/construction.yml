@@ -40,6 +40,15 @@ jobs:
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
           shellcheck .github/scripts/*.sh .githooks/pre-commit
+      # Les harnais du dépôt ne tournaient que dans le crochet, qui ne prouve
+      # rien : il s'exécute sur le poste de qui pourrait vouloir le contourner.
+      # Ce qui tient, c'est le rejeu au niveau supérieur (§4.4).
+      - name: Harnais du dépôt
+        run: |
+          bash tests/documents.sh
+          bash tests/workflows.sh
+          bash tests/plancher.sh
+
       - name: Empreinte déterministe
         run: |
           set -euo pipefail
