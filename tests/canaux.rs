@@ -10,6 +10,13 @@
 //!
 //! Témoin rouge désigné : dans `main`, écrire le message d'erreur sur la sortie
 //! standard au lieu de la sortie d'erreur.
+//!
+//! Témoin rouge — la mutation qui doit le faire rougir, écrite ici pour que
+//! `tests/temoins.sh` puisse l'appliquer. Une prose qui l'affirmerait ne se
+//! relit pas ; ceci s'exécute.
+//! TÉMOIN fichier src/main.rs
+//! TÉMOIN ancien         eprintln!("{erreur}");
+//! TÉMOIN nouveau         println!("{erreur}");
 
 use std::process::Command;
 

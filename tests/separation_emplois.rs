@@ -10,6 +10,14 @@
 //!
 //! Témoin rouge désigné : poser `std::process::Command` dans un fichier de
 //! `src/juger/`.
+//!
+//! Témoin rouge — la mutation qui doit le faire rougir, écrite ici pour que
+//! `tests/temoins.sh` puisse l'appliquer. Une prose qui l'affirmerait ne se
+//! relit pas ; ceci s'exécute.
+//! TÉMOIN fichier src/juger/mutation-temoin.rs
+//! TÉMOIN nouveau pub fn lire() {
+//! TÉMOIN nouveau     let _ = std::process::Command::new("git");
+//! TÉMOIN nouveau }
 
 mod commun;
 

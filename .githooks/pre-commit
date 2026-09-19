@@ -42,6 +42,8 @@ fi
 if [ -f Cargo.toml ]; then
   echo "· forme"
   cargo fmt --all -- --check
+  # `tests/temoins.sh` n'est PAS joué ici : il recompile à chaque mutation, et le
+  # budget du crochet est de dix secondes. Sa place est le passage complet.
   echo "· harnais"
   # `--lib` ne jouerait rien : les harnais vivent dans `tests/`, hors de
   # l'empreinte, pour que les corriger n'annule pas une validation (§4.4).

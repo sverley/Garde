@@ -15,6 +15,12 @@
 //! comportement réel, pas l'intention écrite en commentaire.
 //!
 //! Témoin rouge désigné : poser un fichier sous `src/autoportes/tests/`.
+//!
+//! Témoin rouge — la mutation qui doit le faire rougir, écrite ici pour que
+//! `tests/temoins.sh` puisse l'appliquer. Une prose qui l'affirmerait ne se
+//! relit pas ; ceci s'exécute.
+//! TÉMOIN fichier src/autoportes/tests/mutation-temoin.rs
+//! TÉMOIN nouveau // un harnais livre, pose la ou la liste d'exclusions l'ecarte
 
 mod commun;
 

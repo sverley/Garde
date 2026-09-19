@@ -14,6 +14,16 @@
 //!
 //! Témoin rouge désigné : dans `porte`, chercher `--aide` dans les arguments
 //! avant de les analyser, au lieu de les analyser d'abord.
+//!
+//! Témoin rouge — la mutation qui doit le faire rougir, écrite ici pour que
+//! `tests/temoins.sh` puisse l'appliquer. Une prose qui l'affirmerait ne se
+//! relit pas ; ceci s'exécute.
+//! TÉMOIN fichier src/lib.rs
+//! TÉMOIN ancien     match appel::analyser(arguments) {
+//! TÉMOIN nouveau     if arguments.iter().any(|a| a == "--aide") {
+//! TÉMOIN nouveau         return (Sortie::Vert, aide(), String::new());
+//! TÉMOIN nouveau     }
+//! TÉMOIN nouveau     match appel::analyser(arguments) {
 
 mod commun;
 

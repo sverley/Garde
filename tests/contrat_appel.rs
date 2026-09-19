@@ -6,6 +6,13 @@
 //!
 //! Témoin rouge désigné : dans `analyser`, ignorer la valeur de `--projet` et
 //! rendre toujours le projet de la garde.
+//!
+//! Témoin rouge — la mutation qui doit le faire rougir, écrite ici pour que
+//! `tests/temoins.sh` puisse l'appliquer. Une prose qui l'affirmerait ne se
+//! relit pas ; ceci s'exécute.
+//! TÉMOIN fichier src/appel.rs
+//! TÉMOIN ancien             "--projet" => projet = Some(PathBuf::from(valeur(&mut reste, "--projet")?)),
+//! TÉMOIN nouveau             "--projet" => { valeur(&mut reste, "--projet")?; projet = Some(projet_par_defaut()); }
 
 use garde::appel::{analyser, Anterieur, Erreur};
 use std::path::PathBuf;
