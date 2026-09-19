@@ -38,7 +38,16 @@ liste() {
 nommes_existent() {
   local arbre="$1" faute=0 doc
   while IFS= read -r doc; do
-    [ -f "$arbre/$doc" ] || { echo "  $doc est à lire mais n'existe pas"; faute=1; }
+    case "$doc" in
+      */\*\*)
+        doc="${doc%/**}"
+        if [ ! -d "$arbre/$doc" ] || [ -z "$(ls -A "$arbre/$doc" 2>/dev/null)" ]; then
+          echo "  $doc/** est à lire mais ne contient rien"
+          faute=1
+        fi
+        ;;
+      *) [ -f "$arbre/$doc" ] || { echo "  $doc est à lire mais n'existe pas"; faute=1; } ;;
+    esac
   done < <(liste "$arbre")
   return "$faute"
 }
@@ -48,8 +57,12 @@ catalogues_tous_listes() {
   for cat in "$arbre"/docs/catalogues/*.md; do
     [ -e "$cat" ] || continue
     nom="${cat#"$arbre"/}"
-    liste "$arbre" | grep -qxF "$nom" \
-      || { echo "  $nom est un catalogue et n'est pas dans la liste à lire"; faute=1; }
+    # Nommé un par un, ou couvert par le répertoire : les deux valent, mais
+    # aucun catalogue ne doit échapper aux deux.
+    liste "$arbre" | grep -qxF "$nom" && continue
+    liste "$arbre" | grep -qxF "$(dirname "$nom")/**" && continue
+    echo "  $nom est un catalogue et n'est couvert par aucune ligne de la liste"
+    faute=1
   done
   return "$faute"
 }
@@ -78,6 +91,7 @@ fabriquer() {
       # On omet le premier catalogue venu, quel qu'il soit : coder son nom en
       # dur ferait taire le témoin le jour où ce catalogue change de nom.
       [ "$defaut" = "catalogue-absent" ] && [ "$omis" = "" ] && { omis="$nom"; continue; }
+      :
       printf '%s\n' "$nom"
     done
     [ "$defaut" = "document-absent" ] && printf 'docs/document-qui-n-existe-pas.md\n'
