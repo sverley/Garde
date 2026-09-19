@@ -50,12 +50,42 @@ fn dependances_declarees() -> Vec<String> {
     caisses
 }
 
-/// Les caisses qui ont une entrée : un intitulé `### caisse : <nom>`.
-fn caisses_decidees() -> Vec<String> {
-    commun::lire(DECISIONS)
-        .lines()
-        .filter_map(|l| l.strip_prefix("### caisse :").map(|n| n.trim().to_string()))
-        .collect()
+/// Les caisses nommées par un intitulé de troisième niveau, sous la rubrique
+/// donnée.
+///
+/// L'intitulé est lu tel qu'un humain l'écrit — `### clap` — et non sous un
+/// marqueur inventé pour la commodité du harnais. Le marqueur d'avant,
+/// `### caisse : …`, n'était employé par aucune entrée : le harnais lisait donc
+/// zéro entrée et passait parce qu'il n'y avait zéro dépendance. Un vert qui ne
+/// mesure rien.
+fn caisses_sous(rubrique: &str) -> Vec<String> {
+    let mut dedans = false;
+    let mut trouvees = Vec::new();
+    for ligne in commun::lire(DECISIONS).lines() {
+        let l = ligne.trim_end();
+        if let Some(titre) = l.strip_prefix("## ") {
+            dedans = titre.trim() == rubrique;
+            continue;
+        }
+        if l.starts_with("# ") {
+            dedans = false;
+            continue;
+        }
+        if dedans {
+            if let Some(nom) = l.strip_prefix("### ") {
+                trouvees.push(nom.trim().to_string());
+            }
+        }
+    }
+    trouvees
+}
+
+fn caisses_retenues() -> Vec<String> {
+    caisses_sous("Caisses retenues")
+}
+
+fn caisses_ecartees() -> Vec<String> {
+    caisses_sous("Caisses écartées")
 }
 
 #[test]
@@ -68,17 +98,21 @@ fn le_document_des_decisions_existe() {
 }
 
 #[test]
-fn l_ecart_a_clap_est_ecrit() {
-    let decisions = commun::lire(DECISIONS);
+fn l_ecart_a_clap_est_lu_comme_une_entree() {
+    // Ancre le lecteur sur une entrée connue. Sans elle, une lecture qui ne
+    // trouve rien passerait tant que le manifeste est vide — c'est exactement
+    // ce qui s'est produit, et rien ne l'a dit.
     assert!(
-        decisions.contains("clap"),
-        "l'arbitrage nommé par #4 n'est pas consigné : trancher ici, et écrire pourquoi"
+        caisses_ecartees().iter().any(|c| c == "clap"),
+        "l'écart à `clap` n'est pas lu comme une entrée de « Caisses écartées » : \
+         intitulés trouvés = {:?}",
+        caisses_ecartees()
     );
 }
 
 #[test]
 fn aucune_dependance_sans_entree() {
-    let decidees = caisses_decidees();
+    let decidees = caisses_retenues();
     let orphelines: Vec<String> = dependances_declarees()
         .into_iter()
         .filter(|caisse| !decidees.contains(caisse))
@@ -93,7 +127,7 @@ fn aucune_dependance_sans_entree() {
 #[test]
 fn aucune_entree_sans_dependance() {
     let declarees = dependances_declarees();
-    let mortes: Vec<String> = caisses_decidees()
+    let mortes: Vec<String> = caisses_retenues()
         .into_iter()
         .filter(|caisse| !declarees.contains(caisse))
         .collect();
@@ -101,5 +135,21 @@ fn aucune_entree_sans_dependance() {
         mortes.is_empty(),
         "décisions qui nomment une caisse absente du manifeste — un renvoi mort (§4.1) : {}",
         mortes.join(", ")
+    );
+}
+
+#[test]
+fn aucune_caisse_ecartee_n_est_declaree() {
+    // Une caisse écartée qui reviendrait par le manifeste serait une décision
+    // contredite en silence. La bijection ne le voyait pas.
+    let declarees = dependances_declarees();
+    let revenues: Vec<String> = caisses_ecartees()
+        .into_iter()
+        .filter(|c| declarees.contains(c))
+        .collect();
+    assert!(
+        revenues.is_empty(),
+        "caisses écartées par une décision et pourtant déclarées : {}",
+        revenues.join(", ")
     );
 }
