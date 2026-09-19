@@ -7,6 +7,10 @@
 //! Témoin rouge désigné : dans `analyser`, ignorer la valeur de `--projet` et
 //! rendre toujours le projet de la garde.
 //!
+//! Source de l'exigence — ce qui l'engage, et qui n'est ni un corps d'issue,
+//! ni une documentation simple, ni la parole d'une session.
+//! SOURCE §5 — dépôt désigné : le projet en argument, repli sur le sien ; et le porteur, pour les trois formes de `--anterieur`
+//!
 //! Témoin rouge — la mutation qui doit le faire rougir, écrite ici pour que
 //! `tests/temoins.sh` puisse l'appliquer. Une prose qui l'affirmerait ne se
 //! relit pas ; ceci s'exécute.

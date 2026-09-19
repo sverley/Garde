@@ -10,6 +10,10 @@
 //! Témoin rouge désigné : ajouter une dépendance à `Cargo.toml` sans lui écrire
 //! son entrée.
 //!
+//! Source de l'exigence — ce qui l'engage, et qui n'est ni un corps d'issue,
+//! ni une documentation simple, ni la parole d'une session.
+//! SOURCE §5 — règle de dépendances : chaque dépendance du noyau est une décision justifiée
+//!
 //! Témoin rouge — la mutation qui doit le faire rougir, écrite ici pour que
 //! `tests/temoins.sh` puisse l'appliquer. Une prose qui l'affirmerait ne se
 //! relit pas ; ceci s'exécute.

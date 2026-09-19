@@ -11,6 +11,10 @@
 //! Témoin rouge désigné : dans `main`, écrire le message d'erreur sur la sortie
 //! standard au lieu de la sortie d'erreur.
 //!
+//! Source de l'exigence — ce qui l'engage, et qui n'est ni un corps d'issue,
+//! ni une documentation simple, ni la parole d'une session.
+//! SOURCE porteur — la convention GNU : l'aide sur la sortie standard, la faute sur la sortie d'erreur
+//!
 //! Témoin rouge — la mutation qui doit le faire rougir, écrite ici pour que
 //! `tests/temoins.sh` puisse l'appliquer. Une prose qui l'affirmerait ne se
 //! relit pas ; ceci s'exécute.

@@ -15,6 +15,10 @@
 //! Témoin rouge désigné : dans `porte`, chercher `--aide` dans les arguments
 //! avant de les analyser, au lieu de les analyser d'abord.
 //!
+//! Source de l'exigence — ce qui l'engage, et qui n'est ni un corps d'issue,
+//! ni une documentation simple, ni la parole d'une session.
+//! SOURCE porteur — la convention GNU, et §4.4 : vert veut dire validé
+//!
 //! Témoin rouge — la mutation qui doit le faire rougir, écrite ici pour que
 //! `tests/temoins.sh` puisse l'appliquer. Une prose qui l'affirmerait ne se
 //! relit pas ; ceci s'exécute.
