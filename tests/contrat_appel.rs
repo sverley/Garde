@@ -15,8 +15,8 @@
 //! `tests/temoins.sh` puisse l'appliquer. Une prose qui l'affirmerait ne se
 //! relit pas ; ceci s'exécute.
 //! TÉMOIN fichier src/appel.rs
-//! TÉMOIN ancien             "--projet" => projet = Some(PathBuf::from(valeur(&mut reste, "--projet")?)),
-//! TÉMOIN nouveau             "--projet" => { valeur(&mut reste, "--projet")?; projet = Some(projet_par_defaut()); }
+//! TÉMOIN ancien         projet: projet.unwrap_or_else(projet_par_defaut),
+//! TÉMOIN nouveau         projet: projet_par_defaut(),
 
 use garde::appel::{analyser, Anterieur, Erreur};
 use std::path::PathBuf;
