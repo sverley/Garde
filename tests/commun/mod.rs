@@ -1,4 +1,15 @@
 //! Outils partagés par les harnais. Aucun test ici : ce fichier ne mesure rien.
+//!
+//! `dead_code` est éteint, et il faut dire pourquoi. Chaque harnais est un
+//! binaire séparé qui compile ce module **en entier** ; chacun n'emploie qu'une
+//! part des outils, et signale le reste comme mort. Il n'y a pourtant aucune
+//! fonction morte : elle l'est pour un binaire, vivante pour un autre. Le
+//! silence est donc posé au seul endroit où l'avertissement est faux.
+//!
+//! Ce que ça coûte : un outil réellement inemployé par *tous* les harnais ne
+//! serait plus signalé. C'est le prix, et il est borné — ce module est petit et
+//! chacun de ses outils se lit d'un coup d'œil.
+#![allow(dead_code)]
 
 use std::path::PathBuf;
 

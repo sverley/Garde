@@ -47,6 +47,12 @@ if [ -f Cargo.toml ]; then
   cargo fmt --all -- --check
   # `tests/temoins.sh` n'est PAS joué ici : il recompile à chaque mutation, et le
   # budget du crochet est de dix secondes. Sa place est le passage complet.
+  # clippy au crochet : #14 a ete decouvert par le passage complet alors qu'il
+  # tombait aussi en local. Ce qui se voit en une seconde ici n'a pas a couter
+  # un aller-retour de CI.
+  echo "· clippy"
+  cargo clippy --all-targets --all-features -- -D warnings
+
   echo "· harnais"
   # `--lib` ne jouerait rien : les harnais vivent dans `tests/`, hors de
   # l'empreinte, pour que les corriger n'annule pas une validation (§4.4).
