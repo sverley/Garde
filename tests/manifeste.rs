@@ -9,12 +9,16 @@
 //!
 //! Témoin rouge désigné : retirer la ligne `rust-version` de `Cargo.toml`.
 //!
+//! Source de l'exigence — ce qui l'engage, et qui n'est ni un corps d'issue,
+//! ni une documentation simple, ni la parole d'une session.
+//! SOURCE porteur — la scission bibliothèque + binaire, tranchée en Q2 de l'audit de #4
+//!
 //! Témoin rouge — la mutation qui doit le faire rougir, écrite ici pour que
 //! `tests/temoins.sh` puisse l'appliquer. Une prose qui l'affirmerait ne se
 //! relit pas ; ceci s'exécute.
 //! TÉMOIN fichier Cargo.toml
-//! TÉMOIN ancien rust-version = "1.74"
-//! TÉMOIN nouveau # la version minimale n'est plus declaree
+//! TÉMOIN ancien edition = "2021"
+//! TÉMOIN nouveau # edition non declaree
 
 mod commun;
 
@@ -48,25 +52,14 @@ fn l_edition_est_declaree() {
 }
 
 #[test]
-fn la_version_minimale_de_rust_est_declaree() {
-    let version =
-        champ("rust-version").expect("`Cargo.toml` ne déclare pas de `rust-version` : #4 l'exige");
-    let morceaux: Vec<&str> = version.split('.').collect();
-    assert!(
-        morceaux.len() >= 2
-            && morceaux
-                .iter()
-                .all(|m| m.chars().all(|c| c.is_ascii_digit())),
-        "version minimale mal déclarée : {version}"
-    );
-}
-
-#[test]
 fn la_bibliotheque_et_le_binaire_sont_declares() {
-    let manifeste = commun::lire("Cargo.toml");
+    let sections = commun::lignes_utiles(&commun::lire("Cargo.toml"));
     assert!(
-        manifeste.contains("[lib]"),
+        sections.iter().any(|l| l == "[lib]"),
         "pas de bibliothèque : le cœur ne serait atteignable que par la ligne de commande"
     );
-    assert!(manifeste.contains("[[bin]]"), "pas de binaire déclaré");
+    assert!(
+        sections.iter().any(|l| l == "[[bin]]"),
+        "pas de binaire déclaré"
+    );
 }

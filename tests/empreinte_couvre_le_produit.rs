@@ -16,6 +16,10 @@
 //!
 //! Témoin rouge désigné : poser un fichier sous `src/autoportes/tests/`.
 //!
+//! Source de l'exigence — ce qui l'engage, et qui n'est ni un corps d'issue,
+//! ni une documentation simple, ni la parole d'une session.
+//! SOURCE §4.4 — ce qui ne modifie pas l'état validé ne l'annule pas ; §6 — un harnais-cœur qui rougit est le critère
+//!
 //! Témoin rouge — la mutation qui doit le faire rougir, écrite ici pour que
 //! `tests/temoins.sh` puisse l'appliquer. Une prose qui l'affirmerait ne se
 //! relit pas ; ceci s'exécute.

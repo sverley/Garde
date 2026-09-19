@@ -130,6 +130,31 @@ jouer() { ( cd "$copie" && cargo test --quiet --test "$1" > /dev/null 2>&1 ); }
 harnais=()
 for f in tests/*.rs; do harnais+=("$(basename "$f" .rs)"); done
 
+# --- La source de chaque exigence -------------------------------------------
+# Un harnais mesure une exigence ; l'exigence vient de quelque part. Le document
+# le dit des invariants — *chaque invariant nomme sa source et sa mesure*, et un
+# invariant sans source est orphelin. Tant que le catalogue n'existe pas, les
+# exigences viennent des corps d'issues, qu'une session d'agent a pu écrire.
+# Mesurer une phrase que personne n'a demandée revient à inventer l'engagement
+# qu'on prétend garder : c'est arrivé, et rien ne l'a vu.
+#
+# Chaque harnais nomme donc sa source, et elle doit renvoyer au document, à un
+# catalogue, ou au porteur. Un corps d'issue n'en est pas une.
+
+echo "· sources"
+sans_source=0
+for h in "${harnais[@]}"; do
+  src=$(sed -n 's|^//! SOURCE ||p' "tests/$h.rs")
+  if [ -z "$src" ]; then
+    echo "  SOURCE ABSENTE : tests/$h.rs ne dit pas ce qui engage ce qu'il mesure"
+    sans_source=$((sans_source + 1))
+  elif ! printf '%s' "$src" | grep -qE '^(§|plan|porteur|description|catalogue)'; then
+    echo "  SOURCE SANS AUTORITÉ : tests/$h.rs — « $src »"
+    sans_source=$((sans_source + 1))
+  fi
+done
+[ "$sans_source" -eq 0 ] && echo "  les ${#harnais[@]} exigences nomment leur source"
+
 echo "· état de départ"
 declare -A vert
 for h in "${harnais[@]}"; do
@@ -207,6 +232,7 @@ else
 fi
 
 echo
+menteurs=$((menteurs + sans_source))
 if [ "$menteurs" -ne 0 ]; then
   echo "  $menteurs témoin(s) en défaut — le harnais est en cause, pas le produit." >&2
   exit 2
