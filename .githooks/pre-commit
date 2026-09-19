@@ -44,14 +44,28 @@ fi
 
 if [ -f Cargo.toml ]; then
   echo "· forme"
-  cargo fmt --all -- --check
+  if cargo fmt --version > /dev/null 2>&1; then
+    cargo fmt --all -- --check
+  else
+    echo "  rustfmt absent — saute ici, exige dans le passage complet"
+  fi
   # `tests/temoins.sh` n'est PAS joué ici : il recompile à chaque mutation, et le
   # budget du crochet est de dix secondes. Sa place est le passage complet.
   # clippy au crochet : #14 a ete decouvert par le passage complet alors qu'il
   # tombait aussi en local. Ce qui se voit en une seconde ici n'a pas a couter
   # un aller-retour de CI.
+  #
+  # Absent, il est saute comme shellcheck, et pour la meme raison : le crochet
+  # est un passage ordinaire, ou un outil manquant ne peut pas conclure et le
+  # dit ; le passage complet est strict, et l'y installe. §4.2 separe « rouge »
+  # de « n'a pas pu tourner » exactement pour ca, et deux outils absents ne
+  # peuvent pas avoir deux comportements sans que rien ne le dise.
   echo "· clippy"
-  cargo clippy --all-targets --all-features -- -D warnings
+  if cargo clippy --version > /dev/null 2>&1; then
+    cargo clippy --all-targets --all-features -- -D warnings
+  else
+    echo "  clippy absent — saute ici, exige dans le passage complet"
+  fi
 
   echo "· harnais"
   # `--lib` ne jouerait rien : les harnais vivent dans `tests/`, hors de
