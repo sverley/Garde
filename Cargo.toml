@@ -6,9 +6,6 @@
 name = "garde"
 version = "0.0.0"
 edition = "2021"
-# La version minimale tenue sur les trois cibles. Rien ne la mesure avant A3
-# (#6) : c'est une déclaration, pas une couverture (§4.2).
-rust-version = "1.74"
 
 [lib]
 name = "garde"
