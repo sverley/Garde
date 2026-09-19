@@ -15,13 +15,17 @@ n'a prises.
 
 ```
 docs/document-fondateur.md
-docs/catalogues/contraintes.md
-docs/catalogues/regles.md
+docs/catalogues/**
 docs/chemins.md
 ```
 
+`docs/catalogues/**` veut dire : **tous**, sans en nommer aucun. Une liste écrite à la main serait
+juste sur une branche et fausse sur la suivante — les catalogues ne naissent pas tous au même
+endroit — et un catalogue nouveau y serait oublié en silence. Ce qui doit être lu ne se recopie pas,
+il se désigne.
+
 Cette liste est mesurée : `tests/documents.sh` vérifie que chaque document nommé existe, et
-qu'aucun catalogue n'en est absent. Un catalogue nouveau qu'on oublierait d'y ajouter rougit.
+qu'aucun catalogue du dépôt n'échappe à la liste.
 
 Ce que la mesure ne peut pas faire, c'est vérifier qu'on a lu. Ça ne se code pas, et ça ne se
 contourne qu'au prix de tout le reste : un travail fondé sur ce qu'on croit que les documents
