@@ -8,6 +8,13 @@
 //! refuse ce qu'elle ne reconnaît pas sert mieux l'intégrité.
 //!
 //! Témoin rouge désigné : retirer la ligne `rust-version` de `Cargo.toml`.
+//!
+//! Témoin rouge — la mutation qui doit le faire rougir, écrite ici pour que
+//! `tests/temoins.sh` puisse l'appliquer. Une prose qui l'affirmerait ne se
+//! relit pas ; ceci s'exécute.
+//! TÉMOIN fichier Cargo.toml
+//! TÉMOIN ancien rust-version = "1.74"
+//! TÉMOIN nouveau # la version minimale n'est plus declaree
 
 mod commun;
 

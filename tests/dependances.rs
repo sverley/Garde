@@ -9,6 +9,16 @@
 //!
 //! Témoin rouge désigné : ajouter une dépendance à `Cargo.toml` sans lui écrire
 //! son entrée.
+//!
+//! Témoin rouge — la mutation qui doit le faire rougir, écrite ici pour que
+//! `tests/temoins.sh` puisse l'appliquer. Une prose qui l'affirmerait ne se
+//! relit pas ; ceci s'exécute.
+//! TÉMOIN fichier Cargo.toml
+//! TÉMOIN ancien [lib]
+//! TÉMOIN nouveau [dependencies]
+//! TÉMOIN nouveau serde = "1"
+//! TÉMOIN nouveau
+//! TÉMOIN nouveau [lib]
 
 mod commun;
 
