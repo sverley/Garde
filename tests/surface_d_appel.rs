@@ -110,7 +110,7 @@ fn aucune_option_ne_repond_sans_etre_annoncee() {
 #[test]
 fn toute_option_annoncee_est_reconnue_par_l_analyse() {
     for option in options_annoncees() {
-        match analyser(&[option.clone()]) {
+        match analyser(std::slice::from_ref(&option)) {
             Err(Erreur::OptionInconnue(inconnue)) => panic!(
                 "{inconnue} est annoncée par l'aide mais l'analyse ne la connaît pas : \
                  l'aide et la version doivent être analysées comme le reste, non \
