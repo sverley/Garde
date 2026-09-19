@@ -116,11 +116,24 @@ jobs:
           if [ "$code" -eq 2 ]; then
             refus+=("Le verdict n'a pas pu être rendu : $sortie")
           else
+            # Les exigences sont rendues sans prose ; la prose du rapport est
+            # l'affaire du workflow, qui procure. Seul « plancher » se lève,
+            # et seulement si la validation est constatée.
             while IFS= read -r ligne; do
               [ -n "$ligne" ] || continue
               case "$ligne" in
-                'validation : '*) due+=("$ligne") ;;
-                *) refus+=("$ligne") ;;
+                'plancher '*)
+                  due+=("${ligne#plancher }") ;;
+                'declaration-absente')
+                  refus+=("La description ne porte pas de section \`## Déclaration\`.") ;;
+                'section-vm-absente')
+                  refus+=("La description ne porte pas de section \`## Vérifications manuelles\`.") ;;
+                'analyse-absente '*)
+                  refus+=("La vérification \`${ligne#analyse-absente }\` ne porte pas d'analyse.") ;;
+                'justification-absente')
+                  refus+=("Aucune vérification manuelle demandée, et la section \`## Vérifications manuelles\` ne dit pas pourquoi le produit n'est pas atteint.") ;;
+                *)
+                  refus+=("Exigence non comprise : \`$ligne\`.") ;;
               esac
             done <<< "$sortie"
           fi
@@ -141,7 +154,9 @@ jobs:
               | length' /tmp/commentaires.json)
 
             if [ "$valide" -eq 0 ]; then
-              refus+=("${due[@]}")
+              for chemin in "${due[@]}"; do
+                refus+=("\`$chemin\` n'est pas exclu du plancher : une validation est due.")
+              done
               refus+=("Aucune validation du porteur (\`$porteur\`) pour l'état \`$empreinte\`.")
             fi
           fi

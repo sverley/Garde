@@ -9,9 +9,20 @@
 #                    arbres ; ce script ne sait pas comment
 #   <corps>          la description de l'intégration
 #
-# Rend les refus, un par ligne, chacun nommant le chemin ou la section en cause.
-# Une ligne ouverte par « validation : » dit qu'une validation est due ; c'est à
-# l'appelant de la lever s'il constate cette validation, qui ne vit pas ici.
+# Rend les exigences, une par ligne, chacune nommant le chemin ou la section en
+# cause. Cinq formes, et pas une de plus :
+#
+#   plancher <chemin>        ce chemin modifié n'est pas exclu : une validation
+#                            est due. C'est à l'appelant de la lever s'il
+#                            constate cette validation, qui ne vit pas ici
+#   analyse-absente <nom>    cette vérification est déclarée sans son analyse
+#   justification-absente    aucune vérification demandée, et rien ne dit
+#                            pourquoi le produit n'est pas atteint
+#   declaration-absente      la section « ## Déclaration » manque
+#   section-vm-absente       la section « ## Vérifications manuelles » manque
+#
+# La prose du rapport est l'affaire de l'appelant : ce qui se décide ici se lit
+# sans interprétation.
 #
 #   0  aucun refus
 #   1  au moins un refus
@@ -134,13 +145,13 @@ corps_nu=$(awk '
 refus=()
 
 printf '%s\n' "$corps_nu" | grep -qE '^##[[:space:]]+Déclaration' \
-  || refus+=("forme : la section « ## Déclaration » manque.")
+  || refus+=("declaration-absente")
 
 section_vm=0
 if printf '%s\n' "$corps_nu" | grep -qE '^##[[:space:]]+Vérifications manuelles'; then
   section_vm=1
 else
-  refus+=("forme : la section « ## Vérifications manuelles » manque.")
+  refus+=("section-vm-absente")
 fi
 
 demandees=$(printf '%s\n' "$corps_nu" | grep -cE '^###[[:space:]]*VM-' || true)
@@ -159,7 +170,7 @@ sans_analyse=$(printf '%s\n' "$corps_nu" | awk '
 if [ -n "$sans_analyse" ]; then
   while IFS= read -r nom; do
     [ -n "$nom" ] || continue
-    refus+=("forme : la vérification « $nom » ne porte pas d'analyse.")
+    refus+=("analyse-absente $nom")
   done <<< "$sans_analyse"
 fi
 
@@ -173,7 +184,7 @@ if [ "$section_vm" -eq 1 ] && [ "$demandees" -eq 0 ]; then
     dans && NF && $0 !~ /^#/ { trouve = 1 }
     END { exit (trouve ? 0 : 1) }
   '; then
-    refus+=("forme : aucune vérification manuelle demandée, et la section « ## Vérifications manuelles » ne dit pas pourquoi le produit n'est pas atteint.")
+    refus+=("justification-absente")
   fi
 fi
 
@@ -184,7 +195,7 @@ while IFS= read -r chemin || [ -n "$chemin" ]; do
   chemin=$(elaguer "$chemin")
   [ -n "$chemin" ] || continue
   exclu "$chemin" && continue
-  refus+=("validation : « $chemin » n'est pas exclu du plancher — une validation est due.")
+  refus+=("plancher $chemin")
 done < <(LC_ALL=C sort -u "$modifications")
 
 if [ "${#refus[@]}" -eq 0 ]; then
