@@ -1,0 +1,3 @@
+.github/workflows/garde.yml
+.githooks/pre-commit
+.garde/empreinte-exclusions

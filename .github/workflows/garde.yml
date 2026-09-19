@@ -13,6 +13,12 @@ name: garde
 # Tant que le binaire n'existe pas (§6), ce workflow contrôle la FORME du
 # processus, pas le fond : il ne sait pas quelles vérifications manuelles
 # devraient être demandées. C'est une dette, portée par un besoin ouvert.
+#
+# Il ne juge plus lui-même : ce qui se décide vit dans `verdict.sh`, pris dans
+# la base, et ce qui se procure reste ici — les deux arbres, l'empreinte, les
+# commentaires, le rapport. Une validation n'est due que là où un chemin du
+# plancher l'impose (§4.4) ; les chemins viennent de l'arbre du juge, jamais de
+# l'arbre jugé (§1).
 
 on:
   pull_request_target:
@@ -49,6 +55,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           DEPOT: ${{ github.repository }}
           NUMERO: ${{ github.event.pull_request.number || github.event.issue.number }}
+          REFERENCE: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
 
@@ -106,41 +113,85 @@ jobs:
           empreinte=$(bash base/.github/scripts/empreinte.sh arbre base/.garde/empreinte-exclusions)
           echo "État validable : $empreinte"
 
-          # --- Déclaration (§4.4) -----------------------------------------
-          refus=()
-          grep -q '^## Déclaration' /tmp/corps.txt \
-            || refus+=("La description ne porte pas de section \`## Déclaration\`.")
-          grep -q '^## Vérifications manuelles' /tmp/corps.txt \
-            || refus+=("La description ne porte pas de section \`## Vérifications manuelles\`.")
+          # --- Les deux arbres (§5) : ce qui a changé ----------------------
+          # git quand il répond et aide, le système de fichiers quand il ne
+          # répond pas. Aucune API de forge : §4.4 pose des concepts
+          # indépendants de la forge et du système de versions.
+          liste() {  # liste <répertoire> -> « empreinte chemin », trié par chemin
+            if git -C "$1" rev-parse --verify -q HEAD > /dev/null 2>&1; then
+              git -C "$1" ls-tree -r --format='%(objectname) %(path)' HEAD
+            else
+              ( cd "$1" && find . -type f -not -path './.git/*' -exec sha256sum {} + \
+                  | sed 's|  \./|  |' | awk '{ h=$1; p=$0; sub(/^[^ ]+  /, "", p); print h " " p }' )
+            fi | LC_ALL=C sort -k2
+          }
+          liste base  > /tmp/avant.txt
+          liste arbre > /tmp/apres.txt
+          awk '
+            { h = $1; p = $0; sub(/^[^ ]+ /, "", p) }
+            NR == FNR { avant[p] = h; next }
+            { apres[p] = h; if (!(p in avant) || avant[p] != h) print p }
+            END { for (p in avant) if (!(p in apres)) print p }
+          ' /tmp/avant.txt /tmp/apres.txt | LC_ALL=C sort -u > /tmp/modifications.txt
+          echo "Référence retenue : \`$REFERENCE\` — $(wc -l < /tmp/modifications.txt) chemin(s) modifié(s)."
 
-          # Une vérification demandée sans analyse ne peut pas être validée.
+          # --- Le verdict, rendu par la garde et non par le workflow -------
+          # Les chemins viennent de l'arbre du juge, jamais de l'arbre jugé
+          # (§1, non-intrusion). Le script ne juge que du texte qu'on lui donne.
+          set +e
+          sortie=$(bash base/.github/scripts/verdict.sh \
+            base/docs/chemins.md /tmp/modifications.txt /tmp/corps.txt 2>&1)
+          code=$?
+          set -e
+
+          refus=()
+          due=()
+          if [ "$code" -eq 2 ]; then
+            refus+=("Le verdict n'a pas pu être rendu : $sortie")
+          else
+            # Les exigences sont rendues sans prose ; la prose du rapport est
+            # l'affaire du workflow, qui procure. Seul « plancher » se lève,
+            # et seulement si la validation est constatée.
+            while IFS= read -r ligne; do
+              [ -n "$ligne" ] || continue
+              case "$ligne" in
+                'plancher '*)
+                  due+=("${ligne#plancher }") ;;
+                'declaration-absente')
+                  refus+=("La description ne porte pas de section \`## Déclaration\`.") ;;
+                'section-vm-absente')
+                  refus+=("La description ne porte pas de section \`## Vérifications manuelles\`.") ;;
+                'analyse-absente '*)
+                  refus+=("La vérification \`${ligne#analyse-absente }\` ne porte pas d'analyse.") ;;
+                'justification-absente')
+                  refus+=("Aucune vérification manuelle demandée, et la section \`## Vérifications manuelles\` ne dit pas pourquoi le produit n'est pas atteint.") ;;
+                *)
+                  refus+=("Exigence non comprise : \`$ligne\`.") ;;
+              esac
+            done <<< "$sortie"
+          fi
           demandees=$(grep -c '^### VM-' /tmp/corps.txt || true)
-          if [ "$demandees" -eq 0 ]; then
-            refus+=("Aucune vérification manuelle demandée. Si l'intégration n'en appelle aucune, l'écrire et dire pourquoi.")
-          fi
-          sans_analyse=$(awk '
-            /^### VM-/ { nom=$2; vu=0; next }
-            /^#/       { if (nom != "" && vu == 0) print nom; nom=""; next }
-            NF         { if (nom != "") vu=1 }
-            END        { if (nom != "" && vu == 0) print nom }
-          ' /tmp/corps.txt)
-          if [ -n "$sans_analyse" ]; then
-            refus+=("Vérifications sans analyse : $(echo "$sans_analyse" | tr '\n' ' ')")
-          fi
 
           # --- Validation (§4.4) ------------------------------------------
-          # Seul le porteur valide, et une validation vaut pour l'état validé :
-          # elle cite l'empreinte. Une validation posée avant un push ne porte
-          # donc pas sur l'état d'après, sans qu'aucune règle ne l'énonce.
+          # Elle n'est due que là où un chemin l'impose. Seul le porteur valide,
+          # et une validation vaut pour l'état validé : elle cite l'empreinte.
+          # Une validation posée avant un push ne porte donc pas sur l'état
+          # d'après, sans qu'aucune règle ne l'énonce.
           gh api --paginate "repos/$DEPOT/issues/$NUMERO/comments" \
             > /tmp/commentaires.json
-          valide=$(jq -r --arg p "$porteur" --arg e "$empreinte" '
-            [ .[] | select(.user.login == $p)
-                  | select(.body | test("(?m)^Validé[[:space:]]*:[[:space:]]*" + $e + "[[:space:]]*$")) ]
-            | length' /tmp/commentaires.json)
+          valide=0
+          if [ ${#due[@]} -ne 0 ]; then
+            valide=$(jq -r --arg p "$porteur" --arg e "$empreinte" '
+              [ .[] | select(.user.login == $p)
+                    | select(.body | test("(?m)^Validé[[:space:]]*:[[:space:]]*" + $e + "[[:space:]]*$")) ]
+              | length' /tmp/commentaires.json)
 
-          if [ "$valide" -eq 0 ]; then
-            refus+=("Aucune validation du porteur (\`$porteur\`) pour l'état \`$empreinte\`.")
+            if [ "$valide" -eq 0 ]; then
+              for chemin in "${due[@]}"; do
+                refus+=("\`$chemin\` n'est pas exclu du plancher : une validation est due.")
+              done
+              refus+=("Aucune validation du porteur (\`$porteur\`) pour l'état \`$empreinte\`.")
+            fi
           fi
 
           # --- Enregistrement, écrit par le compte de la plateforme --------
@@ -154,27 +205,43 @@ jobs:
             echo "| | |"
             echo "|---|---|"
             echo "| État validable | \`$empreinte\` |"
+            echo "| Référence retenue | \`$REFERENCE\` |"
             echo "| Tête | \`$tete\` |"
             echo "| Porteur | @$porteur |"
             echo "| Vérifications demandées | $demandees |"
+            if [ ${#due[@]} -eq 0 ]; then
+              echo "| Validation | non due — aucun chemin modifié ne l'impose |"
+            elif [ "$valide" -ne 0 ]; then
+              echo "| Validation | due (${#due[@]} chemin(s)), posée |"
+            else
+              echo "| Validation | due (${#due[@]} chemin(s)), manquante |"
+            fi
             if [ ${#refus[@]} -eq 0 ]; then
               echo "| Verdict | **vert** |"
               echo
-              echo "Chaque vérification demandée est analysée, et le porteur a validé cet état."
+              if [ ${#due[@]} -eq 0 ]; then
+                echo "Aucune vérification ne reste non validée, et rien de ce que cette intégration"
+                echo "modifie n'appelle de validation (§4.4, consignes proportionnées)."
+              else
+                echo "Chaque vérification demandée est analysée, et le porteur a validé cet état."
+              fi
             else
               echo "| Verdict | **rouge** |"
               echo
               for r in "${refus[@]}"; do echo "- $r"; done
-              echo
-              echo "Pour valider, le porteur commente exactement :"
-              echo
-              echo '```'
-              echo "Validé: $empreinte"
-              echo '```'
+              if [ ${#due[@]} -ne 0 ] && [ "$valide" -eq 0 ]; then
+                echo
+                echo "Pour valider, le porteur commente exactement :"
+                echo
+                echo '```'
+                echo "Validé: $empreinte"
+                echo '```'
+              fi
             fi
             echo
-            echo "<sub>Contrôle joué depuis la référence. Aucun code de l'intégration n'a été exécuté."
-            echo "Tant que le binaire n'existe pas, seule la forme du processus est contrôlée.</sub>"
+            echo "<sub>Contrôle joué depuis la référence, et les chemins avec lui : rien n'est demandé"
+            echo "à l'arbre jugé. Aucun code de l'intégration n'a été exécuté. Tant que le binaire"
+            echo "n'existe pas, seule la forme du processus est contrôlée.</sub>"
           } > /tmp/rapport.md
 
           ancien=$(jq -r '[ .[] | select(.body | startswith("<!-- garde -->")) ] | last | .id // empty' \
@@ -189,4 +256,8 @@ jobs:
             printf '%s\n' "${refus[@]}" >&2
             exit 1
           fi
-          echo "Vert : validé pour l'état $empreinte."
+          if [ ${#due[@]} -eq 0 ]; then
+            echo "Vert : rien de ce qui est modifié n'appelle de validation."
+          else
+            echo "Vert : validé pour l'état $empreinte."
+          fi
