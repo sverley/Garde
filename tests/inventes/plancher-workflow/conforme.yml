@@ -1,0 +1,29 @@
+# Témoin vert : ne doit faire rougir aucune mesure.
+#
+# Le fichier de chemins vient de `base/` — l'arbre du juge. Le contrôle appelle
+# le verdict, et ne lit de `arbre/` que des noms de fichiers.
+name: conforme
+on:
+  pull_request_target:
+    types: [opened, ready_for_review]
+jobs:
+  juger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Référence
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: base
+          persist-credentials: false
+
+      - name: Arbre — lu, jamais exécuté
+        uses: actions/checkout@v4
+        with:
+          ref: refs/pull/1/head
+          path: arbre
+          persist-credentials: false
+
+      - name: Verdict
+        run: |
+          bash base/.github/scripts/verdict.sh base/docs/chemins.md /tmp/modifications /tmp/corps.txt

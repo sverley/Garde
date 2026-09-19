@@ -21,6 +21,21 @@ fi
 echo "· empreinte"
 bash .github/scripts/empreinte.sh . .garde/empreinte-exclusions > /dev/null
 
+# Le harnais du plancher ne se joue que si la règle qu'il juge existe : tant
+# qu'elle est due au codage, il rougirait à chaque commit et cesserait d'être lu
+# (§4.2). Son rouge est alors porté par l'issue, pas par le crochet.
+if [ -f .github/scripts/verdict.sh ]; then
+  echo "· plancher"
+  # Le verdict vient au crochet AVEC son message d'échec (§5) : sans lui, celui
+  # qui code ne voit qu'un compte de rouges et doit rouvrir le harnais pour
+  # savoir lequel — ce qu'on lui demande précisément de ne pas faire. Le détail
+  # ne sort que s'il rougit, pour ne pas noyer le vert sous la trace.
+  if ! detail=$(bash tests/plancher.sh 2>&1); then
+    printf '%s\n' "$detail" >&2
+    exit 1
+  fi
+fi
+
 if [ -f Cargo.toml ]; then
   echo "· forme"
   cargo fmt --all -- --check

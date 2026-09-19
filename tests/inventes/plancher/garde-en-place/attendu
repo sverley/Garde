@@ -1,0 +1,3 @@
+plancher .garde/empreinte-exclusions
+plancher .githooks/pre-commit
+plancher .github/workflows/garde.yml
