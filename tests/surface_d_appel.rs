@@ -39,7 +39,7 @@ fn options_annoncees() -> Vec<String> {
     garde::aide()
         .lines()
         .filter_map(|ligne| {
-            let mot = ligne.trim().split_whitespace().next()?;
+            let mot = ligne.split_whitespace().next()?;
             mot.starts_with('-').then(|| mot.to_string())
         })
         .collect()
@@ -49,7 +49,7 @@ fn options_annoncees() -> Vec<String> {
 fn est_une_option(mot: &str) -> bool {
     let corps = mot.trim_start_matches('-');
     mot.starts_with('-')
-        && corps.len() + 1 <= mot.len()
+        && corps.len() < mot.len()
         && !corps.is_empty()
         && corps
             .chars()
