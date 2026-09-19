@@ -21,6 +21,9 @@ fi
 echo "· empreinte"
 bash .github/scripts/empreinte.sh . .garde/empreinte-exclusions > /dev/null
 
+echo "· documents"
+bash tests/documents.sh
+
 echo "· workflows"
 bash tests/workflows.sh
 
