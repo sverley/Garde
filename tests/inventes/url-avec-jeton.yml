@@ -1,0 +1,21 @@
+# Témoin rouge de `jeton_hors_des_url` : le jeton voyage dans l'URL du remote,
+# et y reste après le clone.
+name: url
+on:
+  pull_request_target:
+jobs:
+  juger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Référence
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: base
+          persist-credentials: false
+
+      - name: Arbre
+        run: |
+          git init -q arbre && cd arbre
+          git remote add origin "https://x-access-token:${JETON}@github.com/o/r.git"
+          git fetch -q --depth=1 origin main

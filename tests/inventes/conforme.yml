@@ -1,0 +1,30 @@
+# Témoin vert : ne doit faire rougir aucune mesure.
+name: conforme
+on:
+  pull_request_target:
+    types: [opened, ready_for_review]
+jobs:
+  juger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Référence
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: base
+          persist-credentials: false
+
+      - name: État de l'intégration
+        id: etat
+        run: echo "brouillon=false" >> "$GITHUB_OUTPUT"
+
+      - name: Arbre — lu, jamais exécuté
+        if: steps.etat.outputs.brouillon != 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: refs/pull/1/head
+          path: arbre
+          persist-credentials: false
+
+      - name: Verdict
+        run: bash base/scripts/empreinte.sh arbre base/exclusions

@@ -6,6 +6,17 @@
 //!
 //! Témoin rouge désigné : dans `analyser`, ignorer la valeur de `--projet` et
 //! rendre toujours le projet de la garde.
+//!
+//! Source de l'exigence — ce qui l'engage, et qui n'est ni un corps d'issue,
+//! ni une documentation simple, ni la parole d'une session.
+//! SOURCE §5 — dépôt désigné : le projet en argument, repli sur le sien ; et le porteur, pour les trois formes de `--anterieur`
+//!
+//! Témoin rouge — la mutation qui doit le faire rougir, écrite ici pour que
+//! `tests/temoins.sh` puisse l'appliquer. Une prose qui l'affirmerait ne se
+//! relit pas ; ceci s'exécute.
+//! TÉMOIN fichier src/appel.rs
+//! TÉMOIN ancien             "--projet" => projet = Some(PathBuf::from(valeur(&mut reste, "--projet")?)),
+//! TÉMOIN nouveau             "--projet" => { valeur(&mut reste, "--projet")?; projet = Some(projet_par_defaut()); }
 
 use garde::appel::{analyser, Anterieur, Erreur};
 use std::path::PathBuf;
@@ -98,4 +109,48 @@ fn un_verbe_est_retenu_sans_etre_execute() {
     let appel = analyser(&arguments(&["empreinte", "--projet", "/ailleurs"]))
         .expect("un verbe s'analyse même si rien ne le sert encore");
     assert_eq!(appel.verbe.as_deref(), Some("empreinte"));
+}
+
+#[test]
+fn le_double_tiret_ferme_les_options() {
+    // Ligne directrice 10 de POSIX, reprise par GNU : le premier `--` qui n'est
+    // pas une valeur d'option marque la fin des options. Ce qui suit est un
+    // opérande, fût-il l'exact sosie d'une option.
+    let appel = analyser(&arguments(&["--", "--aide"])).expect("appel légitime");
+    assert_eq!(
+        appel.verbe.as_deref(),
+        Some("--aide"),
+        "après `--`, `--aide` est un mot, pas une demande"
+    );
+    assert!(appel.demande.is_none());
+}
+
+#[test]
+fn le_double_tiret_n_est_pas_lui_meme_un_operande() {
+    let appel = analyser(&arguments(&["--", "empreinte"])).expect("appel légitime");
+    assert_eq!(appel.verbe.as_deref(), Some("empreinte"));
+}
+
+#[test]
+fn les_options_avant_le_double_tiret_gardent_leur_sens() {
+    let appel =
+        analyser(&arguments(&["--projet", "/ailleurs", "--", "--projet"])).expect("appel légitime");
+    assert_eq!(appel.projet, PathBuf::from("/ailleurs"));
+    assert_eq!(
+        appel.verbe.as_deref(),
+        Some("--projet"),
+        "le second `--projet` est un opérande, il ne rejoue pas l'option"
+    );
+}
+
+#[test]
+fn un_second_double_tiret_est_un_operande() {
+    let appel = analyser(&arguments(&["--", "--"])).expect("appel légitime");
+    assert_eq!(appel.verbe.as_deref(), Some("--"));
+}
+
+#[test]
+fn le_double_tiret_seul_ne_donne_pas_de_verbe() {
+    let appel = analyser(&arguments(&["--"])).expect("appel légitime");
+    assert_eq!(appel.verbe, None);
 }

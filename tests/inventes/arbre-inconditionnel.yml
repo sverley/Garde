@@ -1,0 +1,21 @@
+# Témoin rouge de `arbre_conditionne_au_brouillon` : la tête est récupérée
+# avant qu'on sache s'il y a lieu de juger.
+name: inconditionnel
+on:
+  pull_request_target:
+jobs:
+  juger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Référence
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: base
+          persist-credentials: false
+
+      - name: Arbre puis brouillon
+        run: |
+          git init -q arbre && cd arbre
+          git remote add origin "https://github.com/o/r.git"
+          git fetch -q --depth=1 origin "refs/pull/1/head"

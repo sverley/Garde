@@ -23,6 +23,7 @@ tests/*
 
 # NOTE : ne sont PAS exclus, et c'est voulu —
 #   docs/document-fondateur.md   la description : un catalogue
+#   docs/chemins.md              les chemins du plancher : la règle elle-même
 #   docs/catalogues/*            les catalogues, quand ils existeront
 #   .garde/*                     ce fichier lui-même
 #   .github/workflows/*          l'application surveille ses propres chemins (annexe C)
