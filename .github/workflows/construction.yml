@@ -77,6 +77,12 @@ jobs:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all -- --check
+      # `--all-targets` compile les binaires de test : c'est voulu, les harnais
+      # sont du code comme le reste. Voir #14 pour ce que `dead_code` y signale
+      # à tort, et `tests/commun/mod.rs` pour le silence posé et sa raison.
       - run: cargo clippy --all-targets --all-features -- -D warnings
       - run: cargo test --all-features
+      - name: Témoins des harnais
+        if: runner.os == 'Linux'
+        run: bash tests/temoins.sh
       - run: cargo build --release

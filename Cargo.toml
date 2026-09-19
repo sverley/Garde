@@ -1,0 +1,16 @@
+# Le manifeste. Toute caisse ajoutée ici doit avoir son entrée dans
+# `docs/catalogues/decisions.md` : le harnais `dependances` mesure la
+# bijection dans les deux sens.
+
+[package]
+name = "garde"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+name = "garde"
+path = "src/lib.rs"
+
+[[bin]]
+name = "garde"
+path = "src/main.rs"
