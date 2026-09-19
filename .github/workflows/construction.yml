@@ -30,6 +30,8 @@ jobs:
       rust: ${{ steps.detecte.outputs.rust }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - id: detecte
         run: |
           if [ -f Cargo.toml ]; then echo "rust=oui" >> "$GITHUB_OUTPUT"
@@ -59,6 +61,8 @@ jobs:
       GARDE_STRICT: "1"
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
