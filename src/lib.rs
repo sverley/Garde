@@ -75,26 +75,42 @@ pub fn executer(appel: &appel::Appel) -> (Sortie, String, String) {
     }
 }
 
-/// L'aide. Exacte et courte, et elle annonce **toute** la surface d'appel :
-/// une option acceptée que l'aide tait décrirait l'outil plus petit qu'il n'est
-/// (§4.5), et une option annoncée que l'analyse ignore, plus grand.
+/// L'aide. Exacte et courte, et elle annonce **exactement** la surface servie :
+/// elle est construite depuis `appel::OPTIONS`, la même liste que l'analyse lit.
+/// Une option acceptée que l'aide tait décrirait l'outil plus petit qu'il n'est
+/// (§4.5) ; une option annoncée que l'analyse ignore, plus grand.
 pub fn aide() -> String {
+    let large = appel::OPTIONS
+        .iter()
+        .map(|(nom, prend, _)| nom.len() + 1 + prend.len())
+        .max()
+        .unwrap_or(0);
+    let options: Vec<String> = appel::OPTIONS
+        .iter()
+        .map(|(nom, prend, quoi)| {
+            let gauche = if prend.is_empty() {
+                nom.to_string()
+            } else {
+                format!("{nom} {prend}")
+            };
+            format!("  {gauche:<large$}  {quoi}")
+        })
+        .collect();
+
     format!(
         "\
 {nom} {version}
 
-Usage : {nom} <verbe> [options]
+Usage : {nom} [options] [--] <verbe>
 
 Options :
-  --projet <chemin>       le projet à juger ; absent, le projet courant
-  --anterieur <référence> l'état de référence : un chemin, une empreinte de
-                          commit, ou rien — la racine de la branche courante
-  --aide                  affiche cette aide
-  --version               affiche la version
+{options}
 
+`--` ferme les options : ce qui suit est un opérande.
 Aucun verbe n'est encore servi.",
         nom = env!("CARGO_PKG_NAME"),
         version = env!("CARGO_PKG_VERSION"),
+        options = options.join("\n"),
     )
 }
 
